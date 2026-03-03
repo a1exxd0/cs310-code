@@ -43,12 +43,14 @@ class MoSSimulator:
         self,
         n: int,
         phi: Union[Callable[[int], float], np.ndarray],
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        noise_rate: float = 0.0
     ):
         self.n = n
         self.dim_x = 2 ** n
         self.dim_total = 2 ** (n + 1)
         self.rng = default_rng(seed)
+        self.noise_rate = noise_rate
         
         # Store phi as array for efficiency
         if callable(phi):
@@ -58,6 +60,12 @@ class MoSSimulator:
             assert len(self._phi) == self.dim_x, f"phi must have length 2^n = {self.dim_x}"
         
         assert np.all((self._phi >= 0) & (self._phi <= 1)), "phi values must be in [0,1]"
+        assert 0.0 <= noise_rate <= 0.5, "noise_rate must be in [0, 0.5]"
+        
+        # Precompute noisy phi: phi_noisy(x) = (1 - 2*eta)*phi(x) + eta
+        # This attenuates Fourier coefficients by factor (1 - 2*eta).
+        eta = self.noise_rate
+        self._phi_effective = (1 - 2 * eta) * self._phi + eta
         
         # Default backend
         self._backend = AerSimulator()
@@ -72,6 +80,16 @@ class MoSSimulator:
         """tilde_phi(x) = 2*phi(x) - 1 in [-1,1] for all x."""
         return 2 * self._phi - 1
     
+    @property
+    def phi_effective(self) -> np.ndarray:
+        """Effective phi used for sampling (includes noise)."""
+        return self._phi_effective
+    
+    @property
+    def tilde_phi_effective(self) -> np.ndarray:
+        """Effective tilde_phi used for sampling (includes noise)."""
+        return 2 * self._phi_effective - 1
+    
     def set_backend(self, backend):
         """Set the Qiskit backend for circuit execution."""
         self._backend = backend
@@ -80,7 +98,8 @@ class MoSSimulator:
         """
         Sample a random Boolean function f ~ F_D.
         
-        For each x in {0,1}^n, independently sample f(x) ~ Bernoulli(phi(x)).
+        For each x in {0,1}^n, independently sample f(x) ~ Bernoulli(phi_effective(x)).
+        When noise_rate > 0, phi_effective differs from the true phi.
         
         Returns
         -------
@@ -89,7 +108,7 @@ class MoSSimulator:
         """
         if rng is None:
             rng = self.rng
-        return (rng.random(self.dim_x) < self._phi).astype(np.uint8)
+        return (rng.random(self.dim_x) < self._phi_effective).astype(np.uint8)
     
     def statevector_from_f(self, f: np.ndarray) -> Statevector:
         """
@@ -172,7 +191,8 @@ class MoSSimulator:
         for x in range(self.dim_x):
             if f[x] == 1:
                 # Determine which qubits need X gates (for 0 bits in x)
-                ctrl_state = format(x, f'0{self.n}b')[::-1]  # reversed for Qiskit ordering
+                # Qiskit ctrl_state: rightmost character corresponds to control_qubits[0]
+                ctrl_state = format(x, f'0{self.n}b')
                 
                 if self.n == 0:
                     qc.x(qr[0])
@@ -401,12 +421,13 @@ class MoSSimulator:
         counts = {}
         remaining = shots
         
+        pm = generate_preset_pass_manager(backend=backend, optimization_level=1)
+        
         while remaining > 0:
             batch = min(batch_size, remaining)
             f = self.sample_f(rng)
             qc = self.circuit_hadamard_measure(f, use_oracle=use_oracle)
             
-            pm = generate_preset_pass_manager(backend=backend, optimization_level=1)
             transpiled = pm.run(qc)
             
             job = backend.run(transpiled, shots=batch)

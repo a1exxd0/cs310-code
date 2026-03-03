@@ -518,6 +518,7 @@ class MoSProtocol:
         phi: np.ndarray,
         weight_interval: Optional[Tuple[float, float]] = None,
         seed: Optional[int] = None,
+        prover_simulator=None,
     ):
         self.sim = simulator
         self.n = simulator.n
@@ -529,7 +530,13 @@ class MoSProtocol:
         # Import prover here to avoid circular dependency at module level
         from ql.prover import MoSProver
 
-        self.prover = MoSProver(simulator, seed=int(seeds[0]))
+        # If a separate prover simulator is given (e.g. oracle mismatch or
+        # noisy prover), the prover uses that; otherwise it uses the same
+        # simulator as the verifier's ground truth.
+        prover_sim = prover_simulator if prover_simulator is not None else simulator
+        self.prover = MoSProver(prover_sim, seed=int(seeds[0]))
+
+        # The verifier always uses the *true* phi
         self.oracle = ClassicalExampleOracle(
             self.n, self.phi, seed=int(seeds[1])
         )
@@ -568,6 +575,7 @@ class MoSProtocol:
         prover_method: str = "auto",
         prover_mode: str = "statevector",
         verifier_samples_per_coeff: Optional[int] = None,
+        **prover_kwargs,
     ) -> ProtocolTranscript:
         """
         Execute the full interactive protocol.
@@ -589,6 +597,8 @@ class MoSProtocol:
             Simulation mode for Hadamard measurements.
         verifier_samples_per_coeff : int, optional
             Classical samples per Fourier coefficient for verifier.
+        prover_kwargs : dict
+            Additional arguments passed to the prover.
 
         Returns
         -------
@@ -605,6 +615,7 @@ class MoSProtocol:
             num_copies=prover_copies,
             method=prover_method,
             mode=prover_mode,
+            **prover_kwargs,
         )
 
         prover_list = prover_result.heavy_list
