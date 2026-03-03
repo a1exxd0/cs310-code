@@ -10,3 +10,11 @@ source .venv/bin/activate
 py -m ipykernel install --user
 uv pip install -e .
 ```
+
+# Useful resources
+
+See the following papers:
+- [Matthias C. Caro et al. “Classical Verification of Quantum Learning”](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITCS.2024.24)
+- [Urmila Mahadev. Classical Verification of Quantum Computations](https://arxiv.org/abs/1804.01082) 
+- [Matthias C. Caro et al. Interactive proofs for verifying (quantum) learning
+and testing](https://arxiv.org/abs/2410.23969)
