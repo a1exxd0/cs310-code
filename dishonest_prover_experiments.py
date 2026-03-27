@@ -253,6 +253,94 @@ def experiment_gate_noise():
 
 
 # ---------------------------------------------------------------------------
+# Experiment 4: Small Coefficients Edge Case
+# ---------------------------------------------------------------------------
+
+def experiment_small_coefficients():
+    print_header("EXPERIMENT 4: Small Coefficients Edge Case")
+    print("""
+    The assumption "no small non-zero Fourier coefficients" is broken.
+    We create a near-uniform distribution where all 2^n coefficients are equal
+    and very small. 
+    The prover maliciously returns the list of ALL 2^n coefficients.
+    The verifier estimates each coefficient with variance ~ 1/N.
+    Because the verifier sums the SQUARES of these estimates, the positive bias
+    accumulates to 2^n * Var, easily exceeding the acceptance threshold!
+    """)
+
+    n = 6
+    # Create phi where target_s does not dominate, but is just tiny everywhere
+    # Example: mildly biased from uniform so that hat{phi}(s) are very small
+    phi_all_small = np.full(2**n, 0.51)
+
+    # Note: hat{phi}(s) = E[ (1-2y) * (-1)^{<s,x>} ]
+    # Since phi(x) = 0.51 (p=0.51 of y=1), then 1-2y has mean 1 - 2(0.51) = -0.02
+    # So hat{phi}(0) = -0.02, and all other hat{phi}(s) = 0 (since x is uniform).
+    # Wait, if all others are 0, that's not "small non-zero". Let's add slight random noise.
+    rng = np.random.default_rng(42)
+    phi_all_small = 0.5 + 0.01 * (2 * rng.random(2**n) - 1) # values in [0.49, 0.51]
+
+    sim_true = MoSSimulator(n=n, phi=phi_all_small, seed=42)
+
+
+
+    # Expected sum of true squared weights is extremely small: sum_s |E[-0.02 * <s,x>]|^2 
+    true_weights = sum(sim_true.fourier_coefficient(s)**2 for s in range(2**n))
+    print(f"  True total Fourier weight: {true_weights:.6f}")
+
+    protocol = MoSProtocol(
+        simulator=sim_true,
+        phi=phi_all_small,
+        seed=42,
+    )
+
+    # We will override the prover's extraction method to maliciously return ALL coefficients
+    from ql.prover import ProverResult, HeavyCoefficient
+    def fake_extract(*args, **kwargs):
+        heavy = []
+        for s in range(2**n):
+            heavy.append(HeavyCoefficient(
+                s=s, s_bits=format(s, f'0{n}b'),
+                estimated_weight=1.0, count=100, total_postselected=100
+            ))
+        return ProverResult(
+            heavy_coefficients=heavy, theta=0.0, n=n,
+            total_shots=100, total_postselected=100,
+            postselection_rate=1.0, all_s_counts={}
+        )
+
+    protocol.prover.extract_heavy_coefficients = fake_extract
+
+    # A tiny threshold for heavy
+    print(f"  Prover claims all {2**n} coefficients are heavy.")
+    
+    # We pass theta such that it doesn't filter out anything from the prover.
+    # We will override the prover list directly.
+    transcript = protocol.run(
+        epsilon=0.1,
+        delta=0.05,
+        prover_copies=10_000,
+        verifier_samples_per_coeff=500  # Small number of samples causes high variance
+    )
+
+    vr = transcript.verifier_result
+    
+    decision = vr.decision.value
+    print(f"  Decision:  {decision}")
+    print(f"  Reason:    {vr.reason}")
+    print(f"  Estimated list weight: {vr.estimated_list_weight:.6f}")
+    if protocol.weight_interval:
+        print(f"  Expected interval:     [{protocol.weight_interval[0]:.6f}, "
+              f"{protocol.weight_interval[1]:.6f}]")
+
+    print("\n  Top 5 variance-induced estimates:")
+    estimates = sorted(vr.fourier_estimates, key=lambda fe: fe.estimated_weight, reverse=True)
+    for fe in estimates[:5]:
+        print(f"    s={fe.s:02d} ({fe.s_bits}): est_weight={fe.estimated_weight:.6f} "
+              f"(true={sim_true.fourier_coefficient(fe.s)**2:.6f})")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -264,5 +352,6 @@ if __name__ == "__main__":
     experiment_oracle_mismatch()
     experiment_noisy_prover()
     experiment_gate_noise()
+    experiment_small_coefficients()
 
     print("\n\nDone.")
