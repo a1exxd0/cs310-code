@@ -13,6 +13,3 @@ and the interactive verification protocol from
    :caption: API Reference
 
    mos
-   mos_simulator
-   ql_prover
-   ql_verifier
