@@ -1,30 +1,38 @@
-"""
+r"""
 Mixture-of-Superpositions (MoS) State - Definition 8 of Caro et al.
 
 Represents the mixed quantum example state:
 
-    rho_D = E_{f ~ F_D} [ |psi_{U_n, f}><psi_{U_n, f}| ]
+.. math::
 
-where F_D is the distribution over Boolean functions induced by independently
-sampling f(x) ~ Bernoulli(phi(x)) for each x in {0,1}^n, and
+    \rho_D = \mathbb{E}_{f \sim F_D}
+    \bigl[|\psi_{U_n, f}\rangle\langle\psi_{U_n, f}|\bigr]
 
-    |psi_{U_n, f}> = (1/sqrt(2^n)) sum_x |x, f(x)>
+where :math:`F_D` is the distribution over Boolean functions induced by
+independently sampling :math:`f(x) \sim \text{Bernoulli}(\phi(x))` for each
+:math:`x \in \{0,1\}^n`, and
+
+.. math::
+
+    |\psi_{U_n, f}\rangle = \frac{1}{\sqrt{2^n}} \sum_x |x, f(x)\rangle
 
 This class handles ONLY state-level concerns:
-  - Storing the distribution D = (U_n, phi)
-  - Sampling f ~ F_D
-  - Preparing |psi_f> as a Statevector or QuantumCircuit
-  - Approximating rho_D via Monte Carlo
-  - Recovering classical samples via computational basis measurement (Lemma 1)
+
+- Storing the distribution :math:`D = (U_n, \phi)`
+- Sampling :math:`f \sim F_D`
+- Preparing :math:`|\psi_f\rangle` as a Statevector or QuantumCircuit
+- Approximating :math:`\rho_D` via Monte Carlo
+- Recovering classical samples via computational basis measurement (Lemma 1)
 
 It does NOT handle Hadamard measurement, post-selection, Fourier sampling,
 heavy coefficient extraction, or anything verification-related.
 
 Conventions:
-  - phi(x) = Pr[y=1 | x] in [0, 1]          (the {0,1}-valued label expectation)
-  - tilde_phi(x) = 1 - 2*phi(x) in [-1, 1]  (the {-1,1}-valued label expectation)
-  - Qiskit little-endian: integer x = sum_i x_i * 2^i
-  - Qubits 0..n-1 hold x, qubit n holds the label bit b
+
+- :math:`\phi(x) = \Pr[y{=}1 \mid x] \in [0, 1]` — the {0,1}-valued label expectation
+- :math:`\tilde\phi(x) = 1 - 2\phi(x) \in [-1, 1]` — the {-1,1}-valued label expectation
+- Qiskit little-endian: integer :math:`x = \sum_i x_i \cdot 2^i`
+- Qubits 0..n-1 hold x, qubit n holds the label bit b
 """
 
 import numpy as np
@@ -36,21 +44,22 @@ from qiskit.quantum_info import Statevector, DensityMatrix
 
 
 class MoSState:
-    """
+    r"""
     Mixture-of-Superpositions quantum example state (Definition 8).
 
     Parameters
     ----------
     n : int
-        Number of input bits (dimension of X_n = {0,1}^n).
+        Number of input bits (dimension of :math:`X_n = \{0,1\}^n`).
     phi : callable or array-like
-        The conditional probability function phi(x) = Pr[y=1 | x].
-        If callable: phi(x: int) -> float in [0, 1].
-        If array: phi[x] for x in 0..2^n - 1, values in [0, 1].
+        The conditional probability function :math:`\phi(x) = \Pr[y{=}1 \mid x]`.
+        If callable: ``phi(x: int) -> float`` in [0, 1].
+        If array: ``phi[x]`` for x in 0..2^n - 1, values in [0, 1].
     noise_rate : float
-        Label-flip noise rate eta in [0, 0.5]. When eta > 0, each label
-        is independently flipped with probability eta before state preparation.
-        This corresponds to the MoS noisy functional setting, Definition 5(iii).
+        Label-flip noise rate :math:`\eta \in [0, 0.5]`. When :math:`\eta > 0`,
+        each label is independently flipped with probability :math:`\eta` before
+        state preparation. This corresponds to the MoS noisy functional setting,
+        Definition 5(iii).
     seed : int, optional
         Random seed for reproducibility.
     """
@@ -98,22 +107,22 @@ class MoSState:
 
     @property
     def phi(self) -> np.ndarray:
-        """phi(x) = Pr[y=1|x] in [0, 1] for all x (noiseless)."""
+        r""":math:`\phi(x) = \Pr[y{=}1 \mid x]` in [0, 1] for all x (noiseless)."""
         return self._phi
 
     @property
     def tilde_phi(self) -> np.ndarray:
-        """tilde_phi(x) = 1 - 2*phi(x) in [-1, 1] for all x (noiseless)."""
+        r""":math:`\tilde\phi(x) = 1 - 2\phi(x)` in [-1, 1] for all x (noiseless)."""
         return 1.0 - 2.0 * self._phi
 
     @property
     def phi_effective(self) -> np.ndarray:
-        """Effective phi after noise: (1 - 2*eta)*phi(x) + eta."""
+        r"""Effective phi after noise. :math:`(1 - 2\eta)\phi(x) + \eta`."""
         return self._phi_effective
 
     @property
     def tilde_phi_effective(self) -> np.ndarray:
-        """Effective tilde_phi after noise: (1 - 2*eta) * tilde_phi(x)."""
+        r"""Effective tilde_phi after noise. :math:`(1 - 2\eta) \tilde\phi(x)`."""
         return 1.0 - 2.0 * self._phi_effective
 
     # ------------------------------------------------------------------
@@ -121,11 +130,13 @@ class MoSState:
     # ------------------------------------------------------------------
 
     def sample_f(self, rng: Optional[Generator] = None) -> np.ndarray:
-        """
-        Sample a random Boolean function f ~ F_D.
+        r"""
+        Sample a random Boolean function :math:`f \sim F_D`.
 
-        For each x in {0,1}^n, independently sample f(x) ~ Bernoulli(phi_eff(x)).
-        When noise_rate > 0, phi_eff incorporates the label-flip noise.
+        For each :math:`x \in \{0,1\}^n`, independently sample
+        :math:`f(x) \sim \text{Bernoulli}(\phi_{\text{eff}}(x))`.
+        When ``noise_rate > 0``, :math:`\phi_{\text{eff}}` incorporates
+        the label-flip noise.
 
         Parameters
         ----------
@@ -135,7 +146,7 @@ class MoSState:
         Returns
         -------
         f : np.ndarray of shape (2^n,), dtype=np.uint8
-            f[x] is the value f(x) in {0, 1}.
+            ``f[x]`` is the value f(x) in {0, 1}.
         """
         if rng is None:
             rng = self._rng
@@ -146,13 +157,18 @@ class MoSState:
     # ------------------------------------------------------------------
 
     def statevector_f(self, f: np.ndarray) -> Statevector:
-        """
-        Construct the Qiskit Statevector |psi_{U_n, f}> for a fixed function f.
+        r"""
+        Construct the Qiskit Statevector :math:`|\psi_{U_n, f}\rangle` for a
+        fixed function f.
 
-            |psi_{U_n, f}> = (1/sqrt(2^n)) * sum_x |x, f(x)>
+        .. math::
 
-        In Qiskit's little-endian convention, |x, b> maps to index x + b * 2^n
-        since qubit n (the label) is the highest-index qubit.
+            |\psi_{U_n, f}\rangle
+            = \frac{1}{\sqrt{2^n}} \sum_x |x,\, f(x)\rangle
+
+        In Qiskit's little-endian convention, :math:`|x, b\rangle` maps to
+        index :math:`x + b \cdot 2^n` since qubit n (the label) is the
+        highest-index qubit.
 
         Parameters
         ----------
@@ -162,7 +178,7 @@ class MoSState:
         Returns
         -------
         sv : Statevector
-            The (n+1)-qubit state |psi_{U_n, f}>.
+            The (n+1)-qubit state :math:`|\psi_{U_n, f}\rangle`.
         """
         sv_data = np.zeros(self.dim_total, dtype=np.complex128)
         amp = 1.0 / np.sqrt(self.dim_x)
@@ -178,11 +194,12 @@ class MoSState:
     # ------------------------------------------------------------------
 
     def _circuit_oracle_f(self, f: np.ndarray) -> QuantumCircuit:
-        """
-        Build an oracle circuit U_f mapping |x>|0> -> |x>|f(x)>.
+        r"""
+        Build an oracle circuit :math:`U_f` mapping
+        :math:`|x\rangle|0\rangle \to |x\rangle|f(x)\rangle`.
 
         For each x where f(x) = 1, applies a multi-controlled X gate on the
-        label qubit, controlled on the input register being |x>.
+        label qubit, controlled on the input register being :math:`|x\rangle`.
 
         Parameters
         ----------
@@ -213,10 +230,17 @@ class MoSState:
         return qc
 
     def circuit_prepare_f(self, f: np.ndarray) -> QuantumCircuit:
-        """
-        Build a circuit preparing |psi_{U_n, f}> via H^n + oracle.
+        r"""
+        Build a circuit preparing :math:`|\psi_{U_n, f}\rangle` via
+        :math:`H^{\otimes n}` + oracle.
 
-            |0>^{n+1}  --[H^n ⊗ I]-->  |+>^n|0>  --[U_f]-->  |psi_{U_n, f}>
+        .. math::
+
+            |0\rangle^{\otimes(n+1)}
+            \xrightarrow{H^{\otimes n} \otimes I}
+            |{+}\rangle^{\otimes n}|0\rangle
+            \xrightarrow{U_f}
+            |\psi_{U_n, f}\rangle
 
         This is more hardware-friendly than arbitrary state initialisation.
 
@@ -228,7 +252,8 @@ class MoSState:
         Returns
         -------
         qc : QuantumCircuit
-            Circuit on n+1 qubits that prepares |psi_{U_n, f}>.
+            Circuit on n+1 qubits that prepares
+            :math:`|\psi_{U_n, f}\rangle`.
         """
         qr = QuantumRegister(self.n + 1, "q")
         qc = QuantumCircuit(qr, name="prepare_psi_f")
@@ -244,8 +269,9 @@ class MoSState:
         return qc
 
     def circuit_prepare_f_initialize(self, f: np.ndarray) -> QuantumCircuit:
-        """
-        Build a circuit preparing |psi_{U_n, f}> via Qiskit's Initialize.
+        r"""
+        Build a circuit preparing :math:`|\psi_{U_n, f}\rangle` via Qiskit's
+        Initialize.
 
         Exact but synthesises an arbitrary state preparation unitary —
         less portable to real hardware.
@@ -275,10 +301,13 @@ class MoSState:
         num_samples: int = 1000,
         rng: Optional[Generator] = None,
     ) -> DensityMatrix:
-        """
-        Approximate rho_D by Monte Carlo averaging over sampled f.
+        r"""
+        Approximate :math:`\rho_D` by Monte Carlo averaging over sampled f.
 
-            rho_D ≈ (1/M) sum_{m=1}^{M} |psi_{f_m}><psi_{f_m}|
+        .. math::
+
+            \rho_D \approx \frac{1}{M}
+            \sum_{m=1}^{M} |\psi_{f_m}\rangle\langle\psi_{f_m}|
 
         Parameters
         ----------
@@ -313,18 +342,21 @@ class MoSState:
         self,
         rng: Optional[Generator] = None,
     ) -> Tuple[int, int]:
-        """
-        Draw a classical sample (x, y) ~ D by measuring rho_D in the
-        computational basis.
+        r"""
+        Draw a classical sample :math:`(x, y) \sim D` by measuring
+        :math:`\rho_D` in the computational basis.
 
-        By Lemma 1, this is equivalent to drawing (x, y) ~ D directly:
-          1. Sample f ~ F_D
-          2. Prepare |psi_{U_n, f}>
-          3. Measure in computational basis
-          -> yields (x, f(x)) with x ~ U_n
+        By Lemma 1, this is equivalent to drawing :math:`(x, y) \sim D`
+        directly:
 
-        Equivalently (and more efficiently), we can just sample x ~ U_n
-        and y ~ Bernoulli(phi_eff(x)) directly.
+        1. Sample :math:`f \sim F_D`
+        2. Prepare :math:`|\psi_{U_n, f}\rangle`
+        3. Measure in computational basis — yields :math:`(x, f(x))` with
+           :math:`x \sim U_n`
+
+        Equivalently (and more efficiently), we can just sample
+        :math:`x \sim U_n` and :math:`y \sim \text{Bernoulli}(\phi_{\text{eff}}(x))`
+        directly.
 
         Parameters
         ----------
@@ -351,7 +383,7 @@ class MoSState:
         rng: Optional[Generator] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Draw a batch of classical samples (x_i, y_i) ~ D.
+        Draw a batch of classical samples :math:`(x_i, y_i) \\sim D`.
 
         Parameters
         ----------
@@ -379,12 +411,16 @@ class MoSState:
     # ------------------------------------------------------------------
 
     def fourier_coefficient(self, s: int) -> float:
-        """
-        Compute the exact Fourier coefficient hat{tilde_phi}(s).
+        r"""
+        Compute the exact Fourier coefficient :math:`\hat{\tilde\phi}(s)`.
 
-            hat{tilde_phi}(s) = E_{x ~ U_n}[tilde_phi(x) * chi_s(x)]
+        .. math::
 
-        where chi_s(x) = (-1)^{s · x} and tilde_phi = 1 - 2*phi (noiseless).
+            \hat{\tilde\phi}(s)
+            = \mathbb{E}_{x \sim U_n}[\tilde\phi(x) \cdot \chi_s(x)]
+
+        where :math:`\chi_s(x) = (-1)^{s \cdot x}` and
+        :math:`\tilde\phi = 1 - 2\phi` (noiseless).
 
         Parameters
         ----------
@@ -394,7 +430,7 @@ class MoSState:
         Returns
         -------
         coeff : float
-            The Fourier coefficient hat{tilde_phi}(s).
+            The Fourier coefficient :math:`\hat{\tilde\phi}(s)`.
         """
         tphi = self.tilde_phi
         # Compute (-1)^{popcount(s & x)} for all x
@@ -403,12 +439,13 @@ class MoSState:
         return float(np.mean(tphi * chi_s))
 
     def fourier_coefficient_effective(self, s: int) -> float:
-        """
-        Compute hat{tilde_phi_eff}(s) = (1 - 2*eta) * hat{tilde_phi}(s).
+        r"""
+        Compute :math:`\hat{\tilde\phi}_{\text{eff}}(s)
+        = (1 - 2\eta) \hat{\tilde\phi}(s)`.
 
-        This is the Fourier coefficient of the noise-adjusted tilde_phi,
-        which governs the actual sampling distribution from Theorem 5
-        when noise_rate > 0.
+        This is the Fourier coefficient of the noise-adjusted
+        :math:`\tilde\phi`, which governs the actual sampling distribution
+        from Theorem 5 when ``noise_rate > 0``.
 
         Parameters
         ----------
@@ -423,26 +460,28 @@ class MoSState:
         return (1.0 - 2.0 * self.noise_rate) * self.fourier_coefficient(s)
 
     def fourier_spectrum(self) -> np.ndarray:
-        """
-        Compute the full Fourier spectrum {hat{tilde_phi}(s)} for all s.
+        r"""
+        Compute the full Fourier spectrum
+        :math:`\{\hat{\tilde\phi}(s)\}` for all s.
 
         Returns
         -------
         spectrum : np.ndarray of shape (2^n,)
-            spectrum[s] = hat{tilde_phi}(s).
+            ``spectrum[s]`` = :math:`\hat{\tilde\phi}(s)`.
         """
         return np.array([self.fourier_coefficient(s) for s in range(self.dim_x)])
 
     def parseval_check(self) -> Tuple[float, float]:
-        """
-        Verify Parseval's identity: sum_s hat{tilde_phi}(s)^2 = E[tilde_phi(x)^2].
+        r"""
+        Verify Parseval's identity:
+        :math:`\sum_s \hat{\tilde\phi}(s)^2 = \mathbb{E}[\tilde\phi(x)^2]`.
 
         Returns
         -------
         fourier_sum : float
-            sum_s hat{tilde_phi}(s)^2
+            :math:`\sum_s \hat{\tilde\phi}(s)^2`
         expected_sq : float
-            E_{x ~ U_n}[tilde_phi(x)^2]
+            :math:`\mathbb{E}_{x \sim U_n}[\tilde\phi(x)^2]`
         """
         spectrum = self.fourier_spectrum()
         fourier_sum = float(np.sum(spectrum**2))

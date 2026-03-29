@@ -11,6 +11,12 @@ py -m ipykernel install --user
 uv pip install -e .
 ```
 
+# Local Documentation
+```sh
+uv run sphinx-build docs docs/_build/html
+open docs/_build/html/index.html
+```
+
 # Useful resources
 
 See the following papers:

@@ -11,7 +11,6 @@ release = "0.1.0"
 
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autodoc.typehints",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
