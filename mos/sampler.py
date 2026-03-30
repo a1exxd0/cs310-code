@@ -466,9 +466,7 @@ class QuantumFourierSampler:
 
             # Convert index to (n+1)-bit string (Qiskit little-endian)
             bitstring = format(idx, f"0{n + 1}b")[::-1]
-            # Reverse because format() gives big-endian, but Qiskit
-            # bitstrings are printed big-endian (MSB left = highest qubit).
-            # Actually — let's be careful.  In our indexing:
+            # In our indexing:
             #   idx = s + b * 2^n
             # where s uses the same little-endian integer convention as
             # Qiskit.  Qiskit's bitstring representation puts the highest
