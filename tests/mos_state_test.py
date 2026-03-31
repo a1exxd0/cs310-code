@@ -416,6 +416,131 @@ class TestCircuitPreparation:
 
 
 # ======================================================================
+# §5b: Circuit oracle ctrl_state endianness
+# ======================================================================
+
+
+class TestCircuitOracleEndianness:
+    """Verify the circuit oracle encodes f(x) at the correct x, not bit-reversed x.
+
+    The oracle uses ctrl_state=format(x, f"0{n}b") to activate a
+    multi-controlled X gate when the input register holds |x>.  Qiskit
+    interprets ctrl_state as big-endian (leftmost char = highest-index
+    control qubit), which matches format()'s big-endian output.
+
+    A bit-reversal bug would encode f(bit_reverse(x)) instead of f(x),
+    which is only detectable with asymmetric functions where
+    f(x) != f(bit_reverse(x)) for some x.
+    """
+
+    def test_single_point_function_n2(self):
+        """f(x)=1 only at x=1 (binary 01).  Bit-reversed x=1 is x=2 (binary 10).
+        Circuit should place the label at |x=1,b=1>, not |x=2,b=1>."""
+        state = MoSState(n=2, phi=np.full(4, 0.5))
+        f = np.array([0, 1, 0, 0], dtype=np.uint8)  # f(1)=1 only
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10, (
+            f"Fidelity {fid:.6f} — circuit may be encoding f at bit-reversed x"
+        )
+        # Also check the specific nonzero indices
+        # |x=0,b=0> = idx 0, |x=1,b=1> = 1 + 1*4 = idx 5,
+        # |x=2,b=0> = idx 2, |x=3,b=0> = idx 3
+        direct_nz = set(np.where(np.abs(sv_direct.data) > 1e-12)[0])
+        circuit_nz = set(np.where(np.abs(sv_circuit.data) > 1e-12)[0])
+        assert direct_nz == circuit_nz, (
+            f"Nonzero index mismatch: direct={sorted(direct_nz)}, "
+            f"circuit={sorted(circuit_nz)}"
+        )
+
+    def test_single_point_function_n3(self):
+        """f(x)=1 only at x=5 (binary 101).  Bit-reversed x=5 is x=5 (palindrome).
+        Use x=1 (001) instead — reversed is x=4 (100)."""
+        state = MoSState(n=3, phi=np.full(8, 0.5))
+        f = np.zeros(8, dtype=np.uint8)
+        f[1] = 1  # f(1)=1 only; bit-reverse of 001 is 100 = x=4
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10
+
+    def test_asymmetric_function_n3(self):
+        """f is nonzero at x=1 (001) and x=6 (110) — NOT a bit-reversal pair.
+        Bit-reversed: x=1->4 (100), x=6->3 (011).  A reversal bug would
+        place labels at x=4 and x=3 instead."""
+        state = MoSState(n=3, phi=np.full(8, 0.5))
+        f = np.zeros(8, dtype=np.uint8)
+        f[1] = 1
+        f[6] = 1
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10
+        # Verify the exact nonzero structure
+        direct_nz = set(np.where(np.abs(sv_direct.data) > 1e-12)[0])
+        circuit_nz = set(np.where(np.abs(sv_circuit.data) > 1e-12)[0])
+        assert direct_nz == circuit_nz
+
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_maximally_asymmetric_f(self, n):
+        """f(x)=1 only for x < 2^n / 2 (low half).  Under bit-reversal,
+        these map to a scattered set.  The function is maximally
+        sensitive to endianness errors at every n."""
+        dim = 2**n
+        state = MoSState(n=n, phi=np.full(dim, 0.5))
+        f = np.zeros(dim, dtype=np.uint8)
+        f[: dim // 2] = 1  # f(x)=1 for x in [0, 2^{n-1})
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10
+
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_every_single_point_f(self, n):
+        """For every x in {0,...,2^n-1}, test f that is 1 only at x.
+        This exhaustively checks that the oracle targets the right
+        computational basis state for each x."""
+        dim = 2**n
+        state = MoSState(n=n, phi=np.full(dim, 0.5))
+        for x_target in range(dim):
+            f = np.zeros(dim, dtype=np.uint8)
+            f[x_target] = 1
+            sv_direct = state.statevector_f(f)
+            qc = state.circuit_prepare_f(f)
+            sv_circuit = Statevector.from_instruction(qc)
+            fid = state_fidelity(sv_direct, sv_circuit)
+            assert fid > 1 - 1e-10, f"n={n}, x_target={x_target}: fidelity={fid:.10f}"
+
+    def test_cx_path_n1(self):
+        """n=1 uses the cx (single-controlled X) code path, not mcx.
+        f=[0,1]: label qubit flips only when q0=1.
+        ctrl_state=format(1,'01b')='1', so cx fires on q0=1. Correct."""
+        state = MoSState(n=1, phi=np.array([0.5, 0.5]))
+        f = np.array([0, 1], dtype=np.uint8)
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10
+
+    def test_cx_path_n1_reversed(self):
+        """n=1, f=[1,0]: label flips only when q0=0.
+        ctrl_state=format(0,'01b')='0'."""
+        state = MoSState(n=1, phi=np.array([0.5, 0.5]))
+        f = np.array([1, 0], dtype=np.uint8)
+        sv_direct = state.statevector_f(f)
+        qc = state.circuit_prepare_f(f)
+        sv_circuit = Statevector.from_instruction(qc)
+        fid = state_fidelity(sv_direct, sv_circuit)
+        assert fid > 1 - 1e-10
+
+
+# ======================================================================
 # §6: Density matrix rho_D (Definition 8, Eq. 20)
 # ======================================================================
 
