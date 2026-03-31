@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from experiments.proto import common_pb2 as experiments_dot_proto_dot_common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#experiments/proto/noise_sweep.proto\x12\x0b\x65xperiments\x1a\x1e\x65xperiments/proto/common.proto\"[\n\x14NoiseSweepParameters\x12\t\n\x01n\x18\x01 \x01(\x05\x12\x13\n\x0bnoise_rates\x18\x02 \x03(\x01\x12\x12\n\nnum_trials\x18\x03 \x01(\x05\x12\x0f\n\x07\x65psilon\x18\x04 \x01(\x01\"\xb0\x01\n\x1aNoiseSweepExperimentResult\x12\x31\n\x08metadata\x18\x01 \x01(\x0b\x32\x1f.experiments.ExperimentMetadata\x12\x35\n\nparameters\x18\x02 \x01(\x0b\x32!.experiments.NoiseSweepParameters\x12(\n\x06trials\x18\x03 \x03(\x0b\x32\x18.experiments.TrialResultb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#experiments/proto/noise_sweep.proto\x12\x0b\x65xperiments\x1a\x1e\x65xperiments/proto/common.proto\"a\n\x14NoiseSweepParameters\x12\x0f\n\x07n_range\x18\x01 \x03(\x05\x12\x13\n\x0bnoise_rates\x18\x02 \x03(\x01\x12\x12\n\nnum_trials\x18\x03 \x01(\x05\x12\x0f\n\x07\x65psilon\x18\x04 \x01(\x01\"\xb0\x01\n\x1aNoiseSweepExperimentResult\x12\x31\n\x08metadata\x18\x01 \x01(\x0b\x32\x1f.experiments.ExperimentMetadata\x12\x35\n\nparameters\x18\x02 \x01(\x0b\x32!.experiments.NoiseSweepParameters\x12(\n\x06trials\x18\x03 \x03(\x0b\x32\x18.experiments.TrialResultb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,7 +33,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'experiments.proto.noise_swe
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_NOISESWEEPPARAMETERS']._serialized_start=84
-  _globals['_NOISESWEEPPARAMETERS']._serialized_end=175
-  _globals['_NOISESWEEPEXPERIMENTRESULT']._serialized_start=178
-  _globals['_NOISESWEEPEXPERIMENTRESULT']._serialized_end=354
+  _globals['_NOISESWEEPPARAMETERS']._serialized_end=181
+  _globals['_NOISESWEEPEXPERIMENTRESULT']._serialized_start=184
+  _globals['_NOISESWEEPEXPERIMENTRESULT']._serialized_end=360
 # @@protoc_insertion_point(module_scope)

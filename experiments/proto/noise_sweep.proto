@@ -4,7 +4,7 @@ package experiments;
 import "experiments/proto/common.proto";
 
 message NoiseSweepParameters {
-  int32 n = 1;
+  repeated int32 n_range = 1;
   repeated double noise_rates = 2;
   int32 num_trials = 3;
   double epsilon = 4;
