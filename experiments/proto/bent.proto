@@ -1,0 +1,19 @@
+syntax = "proto3";
+package experiments;
+
+import "experiments/proto/common.proto";
+
+message BentParameters {
+  repeated int32 n_range = 1;
+  int32 num_trials = 2;
+  double epsilon = 3;
+  double theta = 4;
+  int32 qfs_shots = 5;
+  string note = 6;
+}
+
+message BentExperimentResult {
+  ExperimentMetadata metadata = 1;
+  BentParameters parameters = 2;
+  repeated TrialResult trials = 3;
+}

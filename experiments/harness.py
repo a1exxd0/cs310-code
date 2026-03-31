@@ -33,8 +33,8 @@ Covers five experimental directions from Caro et al. [ITCS2024]_:
    empirical rejection rates against the information-theoretic soundness
    guarantee (Definition 7).
 
-All experiments write results to structured JSON files suitable for
-direct plotting with matplotlib or pgfplots.
+All experiments write results to Protocol Buffer binary files with
+per-experiment schemas (see ``experiments/proto/``).
 
 Usage
 -----
@@ -52,24 +52,32 @@ Programmatic use::
     results = run_scaling_experiment(
         n_range=range(4, 13), num_trials=20, max_workers=8
     )
-    results.save("scaling_results.json")
+    results.save("scaling_results.pb")
 
 .. [ITCS2024] M.\,C. Caro, M. Hinsche, M. Ioannou, A. Nietner, and
    R. Sweke, "Classical Verification of Quantum Learning," *ITCS 2024*,
    :doi:`10.4230/LIPIcs.ITCS.2024.24`.
 """
 
-import json
 import os
 import time
 import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
+
+from experiments.proto import (
+    common_pb2,
+    scaling_pb2,
+    bent_pb2,
+    truncation_pb2,
+    noise_sweep_pb2,
+    soundness_pb2,
+)
 
 
 # ===================================================================
@@ -176,27 +184,102 @@ class ExperimentResult:
     parameters: dict = field(default_factory=dict)
 
     def save(self, path: str):
-        """Serialise the experiment results to a JSON file.
+        """Serialise the experiment results to a Protocol Buffer file.
+
+        Dispatches to the per-experiment proto schema defined in
+        ``experiments/proto/``.
 
         Parameters
         ----------
         path : str
-            Output file path.  Parent directories are created
-            automatically.
+            Output file path (conventionally ``*.pb``).  Parent
+            directories are created automatically.
         """
-        data = {
-            "experiment_name": self.experiment_name,
-            "timestamp": self.timestamp,
-            "wall_clock_s": self.wall_clock_s,
-            "max_workers": self.max_workers,
-            "parameters": self.parameters,
-            "num_trials": len(self.trials),
-            "trials": [asdict(t) for t in self.trials],
-        }
+        pb = self._to_proto()
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2, default=_json_default)
+        with open(path, "wb") as f:
+            f.write(pb.SerializeToString())
         print(f"  Saved {len(self.trials)} trials to {path}")
+
+    def _to_proto(self):
+        """Convert to the experiment-specific protobuf message."""
+        metadata = common_pb2.ExperimentMetadata(
+            experiment_name=self.experiment_name,
+            timestamp=self.timestamp,
+            wall_clock_s=self.wall_clock_s,
+            max_workers=self.max_workers,
+            num_trials=len(self.trials),
+        )
+        trial_pbs = [_trial_to_proto(t) for t in self.trials]
+        params = self.parameters
+
+        if self.experiment_name == "scaling":
+            return scaling_pb2.ScalingExperimentResult(
+                metadata=metadata,
+                parameters=scaling_pb2.ScalingParameters(
+                    n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    delta=params["delta"],
+                    qfs_shots=params["qfs_shots"],
+                    classical_samples_prover=params["classical_samples_prover"],
+                    classical_samples_verifier=params["classical_samples_verifier"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "bent_function":
+            return bent_pb2.BentExperimentResult(
+                metadata=metadata,
+                parameters=bent_pb2.BentParameters(
+                    n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    theta=params["theta"],
+                    qfs_shots=params["qfs_shots"],
+                    note=params.get("note", ""),
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "verifier_truncation":
+            return truncation_pb2.TruncationExperimentResult(
+                metadata=metadata,
+                parameters=truncation_pb2.TruncationParameters(
+                    n=params["n"],
+                    noise_rate=params["noise_rate"],
+                    a_sq=params["a_sq"],
+                    epsilon_range=params["epsilon_range"],
+                    verifier_sample_range=params["verifier_sample_range"],
+                    num_trials=params["num_trials"],
+                    qfs_shots=params["qfs_shots"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "noise_sweep":
+            return noise_sweep_pb2.NoiseSweepExperimentResult(
+                metadata=metadata,
+                parameters=noise_sweep_pb2.NoiseSweepParameters(
+                    n=params["n"],
+                    noise_rates=params["noise_rates"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "soundness":
+            return soundness_pb2.SoundnessExperimentResult(
+                metadata=metadata,
+                parameters=soundness_pb2.SoundnessParameters(
+                    n=params["n"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    strategies=params["strategies"],
+                ),
+                trials=trial_pbs,
+            )
+        else:
+            raise ValueError(
+                f"No proto schema for experiment: {self.experiment_name}"
+            )
 
     def summary_table(self) -> str:
         r"""Produce a human-readable summary table grouped by :math:`n`.
@@ -237,14 +320,36 @@ class ExperimentResult:
         return "\n".join(lines)
 
 
-def _json_default(obj):
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    raise TypeError(f"Not JSON serializable: {type(obj)}")
+def _trial_to_proto(t: TrialResult) -> common_pb2.TrialResult:
+    """Convert a TrialResult dataclass to its protobuf representation."""
+    pb = common_pb2.TrialResult(
+        n=int(t.n),
+        seed=int(t.seed),
+        prover_time_s=float(t.prover_time_s),
+        qfs_shots=int(t.qfs_shots),
+        qfs_postselected=int(t.qfs_postselected),
+        postselection_rate=float(t.postselection_rate),
+        list_size=int(t.list_size),
+        prover_found_target=bool(t.prover_found_target),
+        verifier_time_s=float(t.verifier_time_s),
+        verifier_samples=int(t.verifier_samples),
+        outcome=str(t.outcome),
+        accepted=bool(t.accepted),
+        accumulated_weight=float(t.accumulated_weight),
+        acceptance_threshold=float(t.acceptance_threshold),
+        hypothesis_correct=bool(t.hypothesis_correct),
+        total_copies=int(t.total_copies),
+        total_time_s=float(t.total_time_s),
+        epsilon=float(t.epsilon),
+        theta=float(t.theta),
+        delta=float(t.delta),
+        a_sq=float(t.a_sq),
+        b_sq=float(t.b_sq),
+        phi_description=str(t.phi_description),
+    )
+    if t.hypothesis_s is not None:
+        pb.hypothesis_s = int(t.hypothesis_s)
+    return pb
 
 
 # ===================================================================
@@ -1379,7 +1484,7 @@ def main():
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "scaling.json"))
+        r.save(str(output_dir / f"scaling_{args.n_min}_{args.n_max}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("bent", "all"):
@@ -1390,7 +1495,7 @@ def main():
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "bent.json"))
+        r.save(str(output_dir / f"bent_4_{bent_max}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("truncation", "all"):
@@ -1400,7 +1505,7 @@ def main():
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "truncation.json"))
+        r.save(str(output_dir / f"truncation_6_6_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("noise", "all"):
@@ -1410,17 +1515,18 @@ def main():
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "noise_sweep.json"))
+        r.save(str(output_dir / f"noise_sweep_6_6_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("soundness", "all"):
+        soundness_trials = max(args.trials, 50)
         r = run_soundness_experiment(
             n=6,
-            num_trials=max(args.trials, 50),
+            num_trials=soundness_trials,
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "soundness.json"))
+        r.save(str(output_dir / f"soundness_6_6_{soundness_trials}.pb"))
         experiments.append(r)
 
     wall_total = time.time() - t_total

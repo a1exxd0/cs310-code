@@ -1,0 +1,37 @@
+syntax = "proto3";
+package experiments;
+
+message TrialResult {
+  int32 n = 1;
+  int64 seed = 2;
+  double prover_time_s = 3;
+  int32 qfs_shots = 4;
+  int32 qfs_postselected = 5;
+  double postselection_rate = 6;
+  int32 list_size = 7;
+  bool prover_found_target = 8;
+  double verifier_time_s = 9;
+  int32 verifier_samples = 10;
+  string outcome = 11;
+  bool accepted = 12;
+  double accumulated_weight = 13;
+  double acceptance_threshold = 14;
+  optional int32 hypothesis_s = 15;
+  bool hypothesis_correct = 16;
+  int32 total_copies = 17;
+  double total_time_s = 18;
+  double epsilon = 19;
+  double theta = 20;
+  double delta = 21;
+  double a_sq = 22;
+  double b_sq = 23;
+  string phi_description = 24;
+}
+
+message ExperimentMetadata {
+  string experiment_name = 1;
+  string timestamp = 2;
+  double wall_clock_s = 3;
+  int32 max_workers = 4;
+  int32 num_trials = 5;
+}
