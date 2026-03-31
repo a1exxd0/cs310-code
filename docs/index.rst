@@ -16,3 +16,4 @@ and the interactive verification protocol from
    sampler
    prover
    verifier
+   harness
