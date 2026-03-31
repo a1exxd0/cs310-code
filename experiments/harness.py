@@ -20,31 +20,40 @@ Covers five experimental directions from Caro et al. [ITCS2024]_:
 3. **Verifier truncation tradeoffs**:
    Vary the verifier's classical sample budget :math:`m_V` and accuracy
    parameter :math:`\varepsilon` to map the completeness/soundness
-   tradeoff surface (Theorems 8, 12).
+   tradeoff surface (Theorems 8, 12).  Uses a fixed :math:`n` (via
+   ``--n``) because the sweep is already 2-D; adding an :math:`n` axis
+   would produce a prohibitively large 3-D trial grid.
 
-4. **Noise sweep**:
+4. **Noise sweep** (:math:`n \times \eta`):
    Random :math:`\varphi` functions drawn from the noisy parity ensemble
    at varying label-flip rate :math:`\eta`, testing the effective
    coefficient regime :math:`\hat{\tilde\phi}_{\mathrm{eff}}(s) =
-   (1-2\eta)\,\hat{\tilde\phi}(s)` (Definition 5(iii), §6.2).
+   (1-2\eta)\,\hat{\tilde\phi}(s)` (Definition 5(iii), §6.2).  Sweeps
+   both :math:`n` and :math:`\eta`, producing a 2-D grid.
 
-5. **Soundness verification**:
+5. **Soundness verification** (:math:`n \times \text{strategy}`):
    Inject dishonest provers with adversarial strategies and measure
    empirical rejection rates against the information-theoretic soundness
-   guarantee (Definition 7).
+   guarantee (Definition 7).  Sweeps :math:`n` against four fixed
+   adversarial strategies.
 
-All experiments write results to structured JSON files suitable for
-direct plotting with matplotlib or pgfplots.
+All experiments write results to Protocol Buffer binary files with
+per-experiment schemas (see ``experiments/proto/``).
 
 Usage
 -----
 Run individual experiments::
 
-    python -m experiments.harness --experiment scaling --n-max 12 --workers 8
+    python -m experiments.harness --experiment scaling --n-min 4 --n-max 12 --workers 8
 
 Run all experiments::
 
-    python -m experiments.harness --all --workers 4
+    python -m experiments.harness --all --n-min 4 --n-max 12 --workers 4
+
+``--n-min`` / ``--n-max`` control the :math:`n` range for all
+experiments.  ``--n`` overrides the fixed dimension used by the
+truncation experiment (which sweeps other axes instead of :math:`n`);
+it defaults to ``--n-min`` when omitted.
 
 Programmatic use::
 
@@ -52,24 +61,32 @@ Programmatic use::
     results = run_scaling_experiment(
         n_range=range(4, 13), num_trials=20, max_workers=8
     )
-    results.save("scaling_results.json")
+    results.save("scaling_results.pb")
 
 .. [ITCS2024] M.\,C. Caro, M. Hinsche, M. Ioannou, A. Nietner, and
    R. Sweke, "Classical Verification of Quantum Learning," *ITCS 2024*,
    :doi:`10.4230/LIPIcs.ITCS.2024.24`.
 """
 
-import json
 import os
 import time
 import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
+
+from experiments.proto import (
+    common_pb2,
+    scaling_pb2,
+    bent_pb2,
+    truncation_pb2,
+    noise_sweep_pb2,
+    soundness_pb2,
+)
 
 
 # ===================================================================
@@ -176,27 +193,102 @@ class ExperimentResult:
     parameters: dict = field(default_factory=dict)
 
     def save(self, path: str):
-        """Serialise the experiment results to a JSON file.
+        """Serialise the experiment results to a Protocol Buffer file.
+
+        Dispatches to the per-experiment proto schema defined in
+        ``experiments/proto/``.
 
         Parameters
         ----------
         path : str
-            Output file path.  Parent directories are created
-            automatically.
+            Output file path (conventionally ``*.pb``).  Parent
+            directories are created automatically.
         """
-        data = {
-            "experiment_name": self.experiment_name,
-            "timestamp": self.timestamp,
-            "wall_clock_s": self.wall_clock_s,
-            "max_workers": self.max_workers,
-            "parameters": self.parameters,
-            "num_trials": len(self.trials),
-            "trials": [asdict(t) for t in self.trials],
-        }
+        pb = self._to_proto()
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2, default=_json_default)
+        with open(path, "wb") as f:
+            f.write(pb.SerializeToString())
         print(f"  Saved {len(self.trials)} trials to {path}")
+
+    def _to_proto(self):
+        """Convert to the experiment-specific protobuf message."""
+        metadata = common_pb2.ExperimentMetadata(
+            experiment_name=self.experiment_name,
+            timestamp=self.timestamp,
+            wall_clock_s=self.wall_clock_s,
+            max_workers=self.max_workers,
+            num_trials=len(self.trials),
+        )
+        trial_pbs = [_trial_to_proto(t) for t in self.trials]
+        params = self.parameters
+
+        if self.experiment_name == "scaling":
+            return scaling_pb2.ScalingExperimentResult(
+                metadata=metadata,
+                parameters=scaling_pb2.ScalingParameters(
+                    n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    delta=params["delta"],
+                    qfs_shots=params["qfs_shots"],
+                    classical_samples_prover=params["classical_samples_prover"],
+                    classical_samples_verifier=params["classical_samples_verifier"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "bent_function":
+            return bent_pb2.BentExperimentResult(
+                metadata=metadata,
+                parameters=bent_pb2.BentParameters(
+                    n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    theta=params["theta"],
+                    qfs_shots=params["qfs_shots"],
+                    note=params.get("note", ""),
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "verifier_truncation":
+            return truncation_pb2.TruncationExperimentResult(
+                metadata=metadata,
+                parameters=truncation_pb2.TruncationParameters(
+                    n=params["n"],
+                    noise_rate=params["noise_rate"],
+                    a_sq=params["a_sq"],
+                    epsilon_range=params["epsilon_range"],
+                    verifier_sample_range=params["verifier_sample_range"],
+                    num_trials=params["num_trials"],
+                    qfs_shots=params["qfs_shots"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "noise_sweep":
+            return noise_sweep_pb2.NoiseSweepExperimentResult(
+                metadata=metadata,
+                parameters=noise_sweep_pb2.NoiseSweepParameters(
+                    n_range=params["n_range"],
+                    noise_rates=params["noise_rates"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "soundness":
+            return soundness_pb2.SoundnessExperimentResult(
+                metadata=metadata,
+                parameters=soundness_pb2.SoundnessParameters(
+                    n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    strategies=params["strategies"],
+                ),
+                trials=trial_pbs,
+            )
+        else:
+            raise ValueError(
+                f"No proto schema for experiment: {self.experiment_name}"
+            )
 
     def summary_table(self) -> str:
         r"""Produce a human-readable summary table grouped by :math:`n`.
@@ -237,14 +329,36 @@ class ExperimentResult:
         return "\n".join(lines)
 
 
-def _json_default(obj):
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    raise TypeError(f"Not JSON serializable: {type(obj)}")
+def _trial_to_proto(t: TrialResult) -> common_pb2.TrialResult:
+    """Convert a TrialResult dataclass to its protobuf representation."""
+    pb = common_pb2.TrialResult(
+        n=int(t.n),
+        seed=int(t.seed),
+        prover_time_s=float(t.prover_time_s),
+        qfs_shots=int(t.qfs_shots),
+        qfs_postselected=int(t.qfs_postselected),
+        postselection_rate=float(t.postselection_rate),
+        list_size=int(t.list_size),
+        prover_found_target=bool(t.prover_found_target),
+        verifier_time_s=float(t.verifier_time_s),
+        verifier_samples=int(t.verifier_samples),
+        outcome=str(t.outcome),
+        accepted=bool(t.accepted),
+        accumulated_weight=float(t.accumulated_weight),
+        acceptance_threshold=float(t.acceptance_threshold),
+        hypothesis_correct=bool(t.hypothesis_correct),
+        total_copies=int(t.total_copies),
+        total_time_s=float(t.total_time_s),
+        epsilon=float(t.epsilon),
+        theta=float(t.theta),
+        delta=float(t.delta),
+        a_sq=float(t.a_sq),
+        b_sq=float(t.b_sq),
+        phi_description=str(t.phi_description),
+    )
+    if t.hypothesis_s is not None:
+        pb.hypothesis_s = int(t.hypothesis_s)
+    return pb
 
 
 # ===================================================================
@@ -1087,7 +1201,7 @@ def run_truncation_experiment(
 
 
 def run_noise_sweep_experiment(
-    n: int = 6,
+    n_range: range = range(4, 7),
     noise_rates: Optional[list[float]] = None,
     num_trials: int = 20,
     epsilon: float = 0.3,
@@ -1099,8 +1213,9 @@ def run_noise_sweep_experiment(
 ) -> ExperimentResult:
     r"""Noise sweep: verification under increasing label-flip noise.
 
-    For each noise rate :math:`\eta`, the MoS state is constructed from
-    the effective label probabilities (Definition 5(iii)):
+    For each :math:`n` in *n_range* and each noise rate :math:`\eta`,
+    the MoS state is constructed from the effective label probabilities
+    (Definition 5(iii)):
 
     .. math::
 
@@ -1123,13 +1238,13 @@ def run_noise_sweep_experiment(
 
     Parameters
     ----------
-    n : int
-        Number of input bits.
+    n_range : range
+        Range of :math:`n` values to sweep.
     noise_rates : list[float] or None
         Values of :math:`\eta` to sweep.
         Default: ``[0.0, 0.05, 0.1, ..., 0.4]``.
     num_trials : int
-        Trials per noise level.
+        Trials per :math:`(n, \eta)` cell.
     epsilon : float
         Accuracy parameter :math:`\varepsilon`.
     qfs_shots : int
@@ -1150,37 +1265,41 @@ def run_noise_sweep_experiment(
     if noise_rates is None:
         noise_rates = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
 
-    print(f"=== Noise Sweep: n={n}, eta in {noise_rates}, {max_workers} workers ===")
+    print(
+        f"=== Noise Sweep: n in {list(n_range)}, eta in {noise_rates}, "
+        f"{max_workers} workers ==="
+    )
     rng = default_rng(base_seed)
 
     specs: list[TrialSpec] = []
-    for eta in noise_rates:
-        effective_coeff = 1.0 - 2.0 * eta
-        a_sq = effective_coeff**2
-        theta = min(epsilon, effective_coeff * 0.9) if effective_coeff > 0.01 else 0.01
+    for n in n_range:
+        for eta in noise_rates:
+            effective_coeff = 1.0 - 2.0 * eta
+            a_sq = effective_coeff**2
+            theta = min(epsilon, effective_coeff * 0.9) if effective_coeff > 0.01 else 0.01
 
-        for _ in range(num_trials):
-            seed = int(rng.integers(0, 2**31))
-            trial_rng = default_rng(seed)
-            phi, target_s = make_random_parity(n, trial_rng)
-            specs.append(
-                TrialSpec(
-                    n=n,
-                    phi=phi,
-                    noise_rate=eta,
-                    target_s=target_s,
-                    epsilon=epsilon,
-                    delta=0.1,
-                    theta=theta,
-                    a_sq=a_sq,
-                    b_sq=a_sq,
-                    qfs_shots=qfs_shots,
-                    classical_samples_prover=classical_samples_prover,
-                    classical_samples_verifier=classical_samples_verifier,
-                    seed=seed,
-                    phi_description=f"noisy_parity_eta={eta}_s={target_s}",
+            for _ in range(num_trials):
+                seed = int(rng.integers(0, 2**31))
+                trial_rng = default_rng(seed)
+                phi, target_s = make_random_parity(n, trial_rng)
+                specs.append(
+                    TrialSpec(
+                        n=n,
+                        phi=phi,
+                        noise_rate=eta,
+                        target_s=target_s,
+                        epsilon=epsilon,
+                        delta=0.1,
+                        theta=theta,
+                        a_sq=a_sq,
+                        b_sq=a_sq,
+                        qfs_shots=qfs_shots,
+                        classical_samples_prover=classical_samples_prover,
+                        classical_samples_verifier=classical_samples_verifier,
+                        seed=seed,
+                        phi_description=f"noisy_parity_eta={eta}_s={target_s}",
+                    )
                 )
-            )
 
     t0 = time.time()
     trials = run_trials_parallel(specs, max_workers=max_workers, label="noise")
@@ -1193,7 +1312,7 @@ def run_noise_sweep_experiment(
         max_workers=max_workers,
         trials=trials,
         parameters={
-            "n": n,
+            "n_range": list(n_range),
             "noise_rates": noise_rates,
             "num_trials": num_trials,
             "epsilon": epsilon,
@@ -1218,7 +1337,7 @@ def run_noise_sweep_experiment(
 
 
 def run_soundness_experiment(
-    n: int = 6,
+    n_range: range = range(4, 7),
     num_trials: int = 50,
     epsilon: float = 0.3,
     classical_samples_verifier: int = 3000,
@@ -1227,8 +1346,9 @@ def run_soundness_experiment(
 ) -> ExperimentResult:
     r"""Empirical soundness against dishonest provers.
 
-    Tests four adversarial prover strategies against the verifier's
-    information-theoretic soundness guarantee (Definition 7):
+    For each :math:`n` in *n_range*, tests four adversarial prover
+    strategies against the verifier's information-theoretic soundness
+    guarantee (Definition 7):
 
     ``"random_list"``
         Prover sends 5 uniformly random frequency indices.  Expected
@@ -1255,10 +1375,10 @@ def run_soundness_experiment(
 
     Parameters
     ----------
-    n : int
-        Number of input bits.
+    n_range : range
+        Range of :math:`n` values to sweep.
     num_trials : int
-        Number of trials per adversarial strategy.
+        Number of trials per :math:`(n, \text{strategy})` cell.
     epsilon : float
         Accuracy parameter :math:`\varepsilon`.
     classical_samples_verifier : int
@@ -1275,37 +1395,38 @@ def run_soundness_experiment(
     strategies = ["random_list", "wrong_parity", "partial_list", "inflated_list"]
 
     print(
-        f"=== Soundness Experiment: n={n}, {num_trials} trials/strategy, "
-        f"{max_workers} workers ==="
+        f"=== Soundness Experiment: n in {list(n_range)}, "
+        f"{num_trials} trials/strategy, {max_workers} workers ==="
     )
     rng = default_rng(base_seed)
 
-    target_s = 1
-    phi = make_single_parity(n, target_s)
-
     specs: list[TrialSpec] = []
-    for strategy in strategies:
-        for _ in range(num_trials):
-            seed = int(rng.integers(0, 2**31))
-            specs.append(
-                TrialSpec(
-                    n=n,
-                    phi=phi,
-                    noise_rate=0.0,
-                    target_s=target_s,
-                    epsilon=epsilon,
-                    delta=0.1,
-                    theta=epsilon,
-                    a_sq=1.0,
-                    b_sq=1.0,
-                    qfs_shots=0,
-                    classical_samples_prover=0,
-                    classical_samples_verifier=classical_samples_verifier,
-                    seed=seed,
-                    phi_description=f"soundness_{strategy}",
-                    dishonest_strategy=strategy,
+    for n in n_range:
+        target_s = 1
+        phi = make_single_parity(n, target_s)
+
+        for strategy in strategies:
+            for _ in range(num_trials):
+                seed = int(rng.integers(0, 2**31))
+                specs.append(
+                    TrialSpec(
+                        n=n,
+                        phi=phi,
+                        noise_rate=0.0,
+                        target_s=target_s,
+                        epsilon=epsilon,
+                        delta=0.1,
+                        theta=epsilon,
+                        a_sq=1.0,
+                        b_sq=1.0,
+                        qfs_shots=0,
+                        classical_samples_prover=0,
+                        classical_samples_verifier=classical_samples_verifier,
+                        seed=seed,
+                        phi_description=f"soundness_{strategy}",
+                        dishonest_strategy=strategy,
+                    )
                 )
-            )
 
     t0 = time.time()
     trials = run_trials_parallel(specs, max_workers=max_workers, label="sound")
@@ -1318,7 +1439,7 @@ def run_soundness_experiment(
         max_workers=max_workers,
         trials=trials,
         parameters={
-            "n": n,
+            "n_range": list(n_range),
             "num_trials": num_trials,
             "epsilon": epsilon,
             "strategies": strategies,
@@ -1351,8 +1472,16 @@ def main():
         default="all",
         help="Which experiment to run",
     )
-    parser.add_argument("--n-max", type=int, default=10, help="Maximum n for scaling")
-    parser.add_argument("--n-min", type=int, default=4, help="Minimum n for scaling")
+    parser.add_argument("--n-min", type=int, default=4, help="Minimum n for sweep experiments")
+    parser.add_argument("--n-max", type=int, default=10, help="Maximum n for sweep experiments")
+    parser.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help="Fixed n for the truncation experiment, which sweeps a 2-D "
+             "grid of (epsilon x verifier_samples) at a single dimension "
+             "rather than sweeping n. Defaults to n-min when not specified.",
+    )
     parser.add_argument(
         "--trials", type=int, default=20, help="Trials per configuration"
     )
@@ -1369,6 +1498,7 @@ def main():
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
+    fixed_n = args.n if args.n is not None else args.n_min
     experiments = []
     t_total = time.time()
 
@@ -1379,48 +1509,50 @@ def main():
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "scaling.json"))
+        r.save(str(output_dir / f"scaling_{args.n_min}_{args.n_max}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("bent", "all"):
+        bent_min = args.n_min if args.n_min % 2 == 0 else args.n_min + 1
         bent_max = args.n_max if args.n_max % 2 == 0 else args.n_max - 1
         r = run_bent_experiment(
-            n_range=range(4, bent_max + 1, 2),
+            n_range=range(bent_min, bent_max + 1, 2),
             num_trials=args.trials,
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "bent.json"))
+        r.save(str(output_dir / f"bent_{bent_min}_{bent_max}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("truncation", "all"):
         r = run_truncation_experiment(
-            n=6,
+            n=fixed_n,
             num_trials=args.trials,
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "truncation.json"))
+        r.save(str(output_dir / f"truncation_{fixed_n}_{fixed_n}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("noise", "all"):
         r = run_noise_sweep_experiment(
-            n=6,
+            n_range=range(args.n_min, args.n_max + 1),
             num_trials=args.trials,
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "noise_sweep.json"))
+        r.save(str(output_dir / f"noise_sweep_{args.n_min}_{args.n_max}_{args.trials}.pb"))
         experiments.append(r)
 
     if args.experiment in ("soundness", "all"):
+        soundness_trials = max(args.trials, 50)
         r = run_soundness_experiment(
-            n=6,
-            num_trials=max(args.trials, 50),
+            n_range=range(args.n_min, args.n_max + 1),
+            num_trials=soundness_trials,
             base_seed=args.seed,
             max_workers=args.workers,
         )
-        r.save(str(output_dir / "soundness.json"))
+        r.save(str(output_dir / f"soundness_{args.n_min}_{args.n_max}_{soundness_trials}.pb"))
         experiments.append(r)
 
     wall_total = time.time() - t_total

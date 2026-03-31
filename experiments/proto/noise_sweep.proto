@@ -1,0 +1,17 @@
+syntax = "proto3";
+package experiments;
+
+import "experiments/proto/common.proto";
+
+message NoiseSweepParameters {
+  repeated int32 n_range = 1;
+  repeated double noise_rates = 2;
+  int32 num_trials = 3;
+  double epsilon = 4;
+}
+
+message NoiseSweepExperimentResult {
+  ExperimentMetadata metadata = 1;
+  NoiseSweepParameters parameters = 2;
+  repeated TrialResult trials = 3;
+}
