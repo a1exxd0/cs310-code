@@ -1,0 +1,187 @@
+"""CLI entry point for the experiment harness.
+
+Usage::
+
+    python -m experiments.harness scaling --n-min 4 --n-max 12 --workers 8
+    python -m experiments.harness all --n-min 4 --n-max 12 --workers 4
+"""
+
+import time
+import argparse
+from pathlib import Path
+
+from experiments.harness.scaling import run_scaling_experiment
+from experiments.harness.bent import run_bent_experiment
+from experiments.harness.truncation import run_truncation_experiment
+from experiments.harness.noise import run_noise_sweep_experiment
+from experiments.harness.soundness import run_soundness_experiment
+
+
+def _add_common_args(parser: argparse.ArgumentParser):
+    """Add arguments shared by all subcommands."""
+    parser.add_argument("--n-min", type=int, default=4, help="Minimum n for sweep experiments")
+    parser.add_argument("--n-max", type=int, default=10, help="Maximum n for sweep experiments")
+    parser.add_argument(
+        "--trials", type=int, default=20, help="Trials per configuration"
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of parallel worker processes (1 = sequential)",
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default="results", help="Output directory"
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Base random seed")
+
+
+def _run_scaling(args):
+    output_dir = Path(args.output_dir)
+    r = run_scaling_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"scaling_{args.n_min}_{args.n_max}_{args.trials}.pb"))
+    return [r]
+
+
+def _run_bent(args):
+    output_dir = Path(args.output_dir)
+    bent_min = args.n_min if args.n_min % 2 == 0 else args.n_min + 1
+    bent_max = args.n_max if args.n_max % 2 == 0 else args.n_max - 1
+    r = run_bent_experiment(
+        n_range=range(bent_min, bent_max + 1, 2),
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"bent_{bent_min}_{bent_max}_{args.trials}.pb"))
+    return [r]
+
+
+def _run_truncation(args):
+    output_dir = Path(args.output_dir)
+    fixed_n = args.n if args.n is not None else args.n_min
+    r = run_truncation_experiment(
+        n=fixed_n,
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"truncation_{fixed_n}_{fixed_n}_{args.trials}.pb"))
+    return [r]
+
+
+def _run_noise(args):
+    output_dir = Path(args.output_dir)
+    r = run_noise_sweep_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"noise_sweep_{args.n_min}_{args.n_max}_{args.trials}.pb"))
+    return [r]
+
+
+def _run_soundness(args):
+    output_dir = Path(args.output_dir)
+    soundness_trials = max(args.trials, 50)
+    r = run_soundness_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=soundness_trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"soundness_{args.n_min}_{args.n_max}_{soundness_trials}.pb"))
+    return [r]
+
+
+def _run_all(args):
+    experiments = []
+    experiments.extend(_run_scaling(args))
+    experiments.extend(_run_bent(args))
+    experiments.extend(_run_truncation(args))
+    experiments.extend(_run_noise(args))
+    experiments.extend(_run_soundness(args))
+    return experiments
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="MoS verification protocol experiments",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # --- scaling ---
+    sp = subparsers.add_parser("scaling", help="Scaling experiment: completeness vs n")
+    _add_common_args(sp)
+
+    # --- bent ---
+    sp = subparsers.add_parser("bent", help="Bent function worst-case experiment")
+    _add_common_args(sp)
+
+    # --- truncation ---
+    sp = subparsers.add_parser("truncation", help="Verifier truncation tradeoff experiment")
+    _add_common_args(sp)
+    sp.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help="Fixed n for the truncation experiment, which sweeps a 2-D "
+             "grid of (epsilon x verifier_samples) at a single dimension "
+             "rather than sweeping n. Defaults to n-min when not specified.",
+    )
+
+    # --- noise ---
+    sp = subparsers.add_parser("noise", help="Noise sweep experiment")
+    _add_common_args(sp)
+
+    # --- soundness ---
+    sp = subparsers.add_parser("soundness", help="Soundness against dishonest provers")
+    _add_common_args(sp)
+
+    # --- all ---
+    sp = subparsers.add_parser("all", help="Run all experiments")
+    _add_common_args(sp)
+    sp.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help="Fixed n for the truncation experiment. Defaults to n-min.",
+    )
+
+    args = parser.parse_args()
+
+    # Dispatch table
+    dispatch = {
+        "scaling": _run_scaling,
+        "bent": _run_bent,
+        "truncation": _run_truncation,
+        "noise": _run_noise,
+        "soundness": _run_soundness,
+        "all": _run_all,
+    }
+
+    t_total = time.time()
+    experiments = dispatch[args.command](args)
+    wall_total = time.time() - t_total
+
+    output_dir = Path(args.output_dir)
+    print(f"\n{'=' * 60}")
+    print(f"Done. {len(experiments)} experiment(s) saved to {output_dir}/")
+    print(f"Total wall-clock time: {wall_total:.1f}s")
+    if args.workers > 1:
+        seq_est = sum(sum(t.total_time_s for t in e.trials) for e in experiments)
+        print(f"Estimated sequential time: {seq_est:.1f}s")
+        if wall_total > 0:
+            print(
+                f"Parallel efficiency: {seq_est / wall_total:.1f}x on {args.workers} workers"
+            )
+
+
+if __name__ == "__main__":
+    main()

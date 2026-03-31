@@ -17,3 +17,4 @@ and the interactive verification protocol from
    prover
    verifier
    harness
+   decode
