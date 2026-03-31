@@ -772,7 +772,6 @@ class TestCompletenessFourierSparse:
         # g(x) ≈ hat(1) * chi_1(x).  For x with x_0=0: g>0, p≈0, h(x)=0.
         # For x with x_0=1: g<0, p≈1, h(x)=1.
         # This matches phi(x) = x_0.
-        rng = np.random.default_rng(123)
         for x in range(8):
             true_label = x & 1
             gx = h.g(x)
