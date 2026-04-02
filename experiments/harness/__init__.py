@@ -5,7 +5,7 @@ Runs instrumented experiments that produce the data needed for
 dissertation figures and analysis, with optional process-level
 parallelism via :class:`~concurrent.futures.ProcessPoolExecutor`.
 
-Covers five experimental directions from Caro et al. [ITCS2024]_:
+Covers seven experimental directions from Caro et al. [ITCS2024]_:
 
 1. **Scaling** (:math:`n = 4 \to 16{+}`):
    Sweep :math:`n` with Goldreich--Levin extraction, recording copy
@@ -36,6 +36,19 @@ Covers five experimental directions from Caro et al. [ITCS2024]_:
    empirical rejection rates against the information-theoretic soundness
    guarantee (Definition 7).  Sweeps :math:`n` against four fixed
    adversarial strategies.
+
+6. **Average-case performance** (:math:`n \times \text{family}`):
+   Test the protocol on diverse function families beyond single parities:
+   :math:`k`-Fourier-sparse (Dirichlet coefficients), random Boolean
+   (uniform truth tables), and sparse-plus-noise (dominant parity with
+   secondary coefficients).  Probes the regime of Corollary 7
+   (2-agnostic Fourier-sparse learning).
+
+7. **Gate-level noise** (:math:`n \times p`):
+   Apply depolarising noise channels to H, X, and CX gates in the QFS
+   circuit, sweeping the error rate :math:`p`.  Goes beyond the
+   label-flip noise model of Definition 5(iii); results are inherently
+   empirical with no theoretical prediction.
 
 All experiments write results to Protocol Buffer binary files with
 per-experiment schemas (see ``experiments/proto/``).
@@ -68,9 +81,18 @@ Programmatic use::
    :doi:`10.4230/LIPIcs.ITCS.2024.24`.
 """
 
+from experiments.harness.average_case import run_average_case_experiment
 from experiments.harness.bent import run_bent_experiment
+from experiments.harness.gate_noise import run_gate_noise_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
-from experiments.harness.phi import make_bent_function, make_random_parity, make_single_parity
+from experiments.harness.phi import (
+    make_bent_function,
+    make_k_sparse,
+    make_random_boolean,
+    make_random_parity,
+    make_single_parity,
+    make_sparse_plus_noise,
+)
 from experiments.harness.results import ExperimentResult, TrialResult
 from experiments.harness.scaling import run_scaling_experiment
 from experiments.harness.soundness import run_soundness_experiment
@@ -82,9 +104,14 @@ __all__ = [
     "TrialResult",
     "TrialSpec",
     "make_bent_function",
+    "make_k_sparse",
+    "make_random_boolean",
     "make_random_parity",
     "make_single_parity",
+    "make_sparse_plus_noise",
+    "run_average_case_experiment",
     "run_bent_experiment",
+    "run_gate_noise_experiment",
     "run_noise_sweep_experiment",
     "run_scaling_experiment",
     "run_soundness_experiment",

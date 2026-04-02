@@ -19,6 +19,7 @@ from experiments.proto import (
     truncation_pb2,
     noise_sweep_pb2,
     soundness_pb2,
+    gate_noise_pb2,
 )
 
 # Maps experiment_name (from ExperimentMetadata) to its top-level proto class.
@@ -28,6 +29,7 @@ _RESULT_TYPES = {
     "verifier_truncation": truncation_pb2.TruncationExperimentResult,
     "noise_sweep": noise_sweep_pb2.NoiseSweepExperimentResult,
     "soundness": soundness_pb2.SoundnessExperimentResult,
+    "gate_noise": gate_noise_pb2.GateNoiseExperimentResult,
 }
 
 # Filename prefixes to experiment names, for files whose experiment_name
@@ -38,6 +40,7 @@ _PREFIX_MAP = {
     "truncation": "verifier_truncation",
     "noise_sweep": "noise_sweep",
     "soundness": "soundness",
+    "gate_noise": "gate_noise",
 }
 
 

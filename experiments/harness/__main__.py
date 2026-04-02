@@ -10,6 +10,8 @@ import time
 import argparse
 from pathlib import Path
 
+from experiments.harness.average_case import run_average_case_experiment
+from experiments.harness.gate_noise import run_gate_noise_experiment
 from experiments.harness.scaling import run_scaling_experiment
 from experiments.harness.bent import run_bent_experiment
 from experiments.harness.truncation import run_truncation_experiment
@@ -100,6 +102,30 @@ def _run_soundness(args):
     return [r]
 
 
+def _run_average_case(args):
+    output_dir = Path(args.output_dir)
+    r = run_average_case_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"average_case_{args.n_min}_{args.n_max}_{args.trials}.pb"))
+    return [r]
+
+
+def _run_gate_noise(args):
+    output_dir = Path(args.output_dir)
+    r = run_gate_noise_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=args.trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+    )
+    r.save(str(output_dir / f"gate_noise_{args.n_min}_{args.n_max}_{args.trials}.pb"))
+    return [r]
+
+
 def _run_all(args):
     experiments = []
     experiments.extend(_run_scaling(args))
@@ -107,6 +133,8 @@ def _run_all(args):
     experiments.extend(_run_truncation(args))
     experiments.extend(_run_noise(args))
     experiments.extend(_run_soundness(args))
+    experiments.extend(_run_average_case(args))
+    experiments.extend(_run_gate_noise(args))
     return experiments
 
 
@@ -144,6 +172,14 @@ def main():
     sp = subparsers.add_parser("soundness", help="Soundness against dishonest provers")
     _add_common_args(sp)
 
+    # --- average_case ---
+    sp = subparsers.add_parser("average_case", help="Average-case performance across function families")
+    _add_common_args(sp)
+
+    # --- gate_noise ---
+    sp = subparsers.add_parser("gate_noise", help="Gate-level depolarising noise experiment")
+    _add_common_args(sp)
+
     # --- all ---
     sp = subparsers.add_parser("all", help="Run all experiments")
     _add_common_args(sp)
@@ -163,6 +199,8 @@ def main():
         "truncation": _run_truncation,
         "noise": _run_noise,
         "soundness": _run_soundness,
+        "average_case": _run_average_case,
+        "gate_noise": _run_gate_noise,
         "all": _run_all,
     }
 

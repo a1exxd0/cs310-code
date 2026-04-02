@@ -13,6 +13,8 @@ from experiments.proto import (
     truncation_pb2,
     noise_sweep_pb2,
     soundness_pb2,
+    average_case_pb2,
+    gate_noise_pb2,
 )
 
 
@@ -201,6 +203,32 @@ class ExperimentResult:
                     num_trials=params["num_trials"],
                     epsilon=params["epsilon"],
                     strategies=params["strategies"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "gate_noise":
+            return gate_noise_pb2.GateNoiseExperimentResult(
+                metadata=metadata,
+                parameters=gate_noise_pb2.GateNoiseParameters(
+                    n_range=params["n_range"],
+                    gate_noise_rates=params["gate_noise_rates"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "average_case":
+            return average_case_pb2.AverageCaseExperimentResult(
+                metadata=metadata,
+                parameters=average_case_pb2.AverageCaseParameters(
+                    n_range=params["n_range"],
+                    families=params["families"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    delta=params["delta"],
+                    qfs_shots=params["qfs_shots"],
+                    classical_samples_prover=params["classical_samples_prover"],
+                    classical_samples_verifier=params["classical_samples_verifier"],
                 ),
                 trials=trial_pbs,
             )
