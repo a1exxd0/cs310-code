@@ -180,11 +180,13 @@ class QuantumFourierSampler:
         self,
         mos_state: MoSState,
         seed: Optional[int] = None,
+        noise_model: Optional[object] = None,
     ):
         self.state = mos_state
         self.n = mos_state.n
         self._seed = seed
         self._rng: Generator = default_rng(seed)
+        self._noise_model = noise_model
 
     # ------------------------------------------------------------------
     # Public API
@@ -388,12 +390,32 @@ class QuantumFourierSampler:
             qc.measure_all()
 
             child_seed = int(self._rng.integers(0, 2**31))
-            sampler = StatevectorSampler(seed=child_seed)
-            job = sampler.run([qc], shots=1)
-            result = job.result()[0]
-            meas = result.data.meas
-            for bitstring, cnt in meas.get_counts().items():
-                counts[bitstring] = counts.get(bitstring, 0) + cnt
+
+            if self._noise_model is not None:
+                # Gate-level noise: use AerSimulator with the noise model.
+                # The circuit is transpiled so that MCX gates decompose
+                # into basis gates (CX, H, X, etc.) to which the noise
+                # model's depolarising channels apply.
+                from qiskit_aer import AerSimulator
+                from qiskit import transpile
+
+                backend = AerSimulator(noise_model=self._noise_model)
+                qc_t = transpile(qc, backend)
+                result = backend.run(
+                    qc_t, shots=1, seed_simulator=child_seed
+                ).result()
+                for bitstring, cnt in result.get_counts().items():
+                    # AerSimulator may include spaces in bitstrings;
+                    # strip them for consistency.
+                    bs = bitstring.replace(" ", "")
+                    counts[bs] = counts.get(bs, 0) + cnt
+            else:
+                sampler = StatevectorSampler(seed=child_seed)
+                job = sampler.run([qc], shots=1)
+                result = job.result()[0]
+                meas = result.data.meas
+                for bitstring, cnt in meas.get_counts().items():
+                    counts[bitstring] = counts.get(bitstring, 0) + cnt
 
         return counts
 

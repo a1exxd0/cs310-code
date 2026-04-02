@@ -215,11 +215,13 @@ class MoSProver:
         self,
         mos_state: MoSState,
         seed: Optional[int] = None,
+        noise_model: Optional[object] = None,
     ):
         self.state = mos_state
         self.n = mos_state.n
         self._seed = seed
         self._rng: Generator = default_rng(seed)
+        self._noise_model = noise_model
 
     # ------------------------------------------------------------------
     # Main protocol entry point
@@ -322,6 +324,7 @@ class MoSProver:
         sampler = QuantumFourierSampler(
             self.state,
             seed=int(self._rng.integers(0, 2**31)),
+            noise_model=self._noise_model,
         )
         qfs_result = sampler.sample(shots=qfs_shots, mode=qfs_mode)
 
