@@ -1,0 +1,156 @@
+# DCS Batch Compute System — Quick Reference
+
+## Overview
+- Uses **SLURM** job scheduling system
+- Head node: `kudu-taught` (PGR: `kudu-staffpgr`)
+- Jobs are queued when nodes are busy
+
+---
+
+## Partitions
+
+| Partition | Type     | Notes                                  |
+|-----------|----------|----------------------------------------|
+| tiger     | CPU only | Up to 128 CPUs, 384GB RAM              |
+| gecko     | GPU      | Up to 16 CPU threads per job           |
+| falcon    | GPU      | Up to 12 CPU threads per job           |
+| eagle     | GPU      | Up to 6 CPU threads per job            |
+
+> Use `falcon,gecko` together to run on whichever GPU node becomes free first.
+> **Do not use GPU partitions if your job doesn't use the GPU.**
+
+---
+
+## Example sbatch Files
+
+### CPU (singlecore)
+```bash
+#!/bin/bash
+#SBATCH --job-name=example-cpu
+#SBATCH --partition=tiger
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=3000       # MB per core
+#SBATCH --time=2-00:00:00
+#SBATCH --mail-type=END,FAIL,TIME_LIMIT_80
+#SBATCH --output=joboutput_%j.out
+#SBATCH --error=joboutput_%j.err
+
+source /etc/profile.d/modules.sh
+source /etc/profile.d/conda.sh
+
+python3.12 my_program.py
+```
+
+### CPU (multicore)
+```bash
+#!/bin/bash
+#SBATCH --job-name=multicore-cpu
+#SBATCH --partition=tiger
+#SBATCH --cpus-per-task=128
+#SBATCH --mem=384000             # 384GB RAM total
+#SBATCH --exclusive=mcs
+#SBATCH --time=2-00:00:00
+#SBATCH --mail-type=END,FAIL,TIME_LIMIT_80
+#SBATCH --output=joboutput_%j.out
+#SBATCH --error=joboutput_%j.err
+
+source /etc/profile.d/modules.sh
+source /etc/profile.d/conda.sh
+
+python3.12 my_program.py
+```
+
+### GPU (falcon + gecko)
+```bash
+#!/bin/bash
+#SBATCH --job-name=example-gpu
+#SBATCH --partition=falcon,gecko
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=12
+#SBATCH --gres=gpu:1
+#SBATCH --time=2-00:00:00
+#SBATCH --mail-type=END,FAIL,TIME_LIMIT_80
+#SBATCH --output=joboutput_%j.out
+#SBATCH --error=joboutput_%j.err
+
+source /etc/profile.d/modules.sh
+source /etc/profile.d/conda.sh
+
+module load CUDA
+source venv/bin/activate
+python3.12 my_cuda_program.py
+```
+
+---
+
+## Submitting & Managing Jobs
+
+| Command                  | Description                              |
+|--------------------------|------------------------------------------|
+| `sbatch example.sbatch`  | Submit a job                             |
+| `squeue`                 | Show status of all queued/running jobs   |
+| `squeue --me`            | Show only your jobs                      |
+| `sinfo`                  | Show partition/node availability         |
+| `sacct`                  | View resource usage of completed jobs    |
+| `scancel <JOBID>`        | Cancel/remove a job from the queue       |
+
+---
+
+## Using a Virtual Environment in a Job
+
+Create and populate your venv before submitting:
+```bash
+python3.12 -m venv venv
+source venv/bin/activate
+pip3.12 install -r requirements.txt
+```
+
+Then activate it inside your sbatch script:
+```bash
+source venv/bin/activate
+python3.12 my_program.py
+```
+
+---
+
+## Jupyter Notebook on the Cluster
+
+### 1. Submit the notebook job
+```bash
+sbatch jupyter.sbatch
+```
+
+`jupyter.sbatch` (CPU example):
+```bash
+#!/bin/bash
+#SBATCH --job-name=jupyter
+#SBATCH --partition=tiger
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=6
+#SBATCH --mem-per-cpu=3000
+#SBATCH --time=12:00:00
+#SBATCH --output=jupyter.log
+#SBATCH --error=jupyter.err
+#SBATCH --mail-type=BEGIN
+
+source /etc/profile.d/modules.sh
+module load python-ml
+cd ~
+jupyter notebook --ip=0.0.0.0 --port=11854 --no-browser
+```
+
+### 2. Find your allocated node
+```bash
+squeue --me
+# e.g. NODELIST = eagle-04
+```
+
+### 3. Connect
+Get the token URL from `jupyter.err` and open the `127.0.0.1` version in your browser.
+
+### 4. Clean up when done
+```bash
+scancel <JOBID>
+```
+
+> Ports 11800–11899 are available; use the last two digits of your username to avoid conflicts.
