@@ -1,6 +1,8 @@
 """Trial specification, worker functions, and parallel dispatch."""
 
 import os
+import signal
+import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -349,15 +351,33 @@ def run_trials_parallel(
     completed = 0
 
     with ProcessPoolExecutor(max_workers=max_workers) as pool:
-        future_to_idx = {
-            pool.submit(_run_trial_worker, spec): idx for idx, spec in enumerate(specs)
-        }
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
-            t = future.result()
-            results[idx] = t
-            completed += 1
-            _print_trial_progress(t, completed, total, label)
+
+        def _terminate_pool(signum, frame):
+            """Kill all worker processes on SIGTERM/SIGINT."""
+            pool.shutdown(wait=False, cancel_futures=True)
+            if hasattr(pool, "_processes"):
+                for proc in pool._processes.values():
+                    if proc.is_alive():
+                        proc.kill()
+            sys.exit(128 + signum)
+
+        prev_term = signal.signal(signal.SIGTERM, _terminate_pool)
+        prev_int = signal.signal(signal.SIGINT, _terminate_pool)
+
+        try:
+            future_to_idx = {
+                pool.submit(_run_trial_worker, spec): idx
+                for idx, spec in enumerate(specs)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                t = future.result()
+                results[idx] = t
+                completed += 1
+                _print_trial_progress(t, completed, total, label)
+        finally:
+            signal.signal(signal.SIGTERM, prev_term)
+            signal.signal(signal.SIGINT, prev_int)
 
     return results  # type: ignore[return-value]
 
