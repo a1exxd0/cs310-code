@@ -4,6 +4,10 @@ Assuming you have [UV](https://docs.astral.sh/uv/) installed:
 uv sync
 ```
 
+# Developer rules
+
+Always use Context7 when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
 # Run tests
 Use parallel workers matching the computer's core count:
 ```sh
