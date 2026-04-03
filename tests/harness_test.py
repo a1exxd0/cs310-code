@@ -3,6 +3,8 @@
 Covers phi generators, result containers (including protobuf
 serialisation), trial specification, worker functions, CLI argument
 parsing, and lightweight integration tests for each experiment runner.
+
+Tests authored by Claude Opus 4.6 in full.
 """
 
 import argparse

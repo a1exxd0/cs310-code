@@ -1,4 +1,8 @@
-"""Tests for experiments.decode — protobuf-to-JSON decoder."""
+"""
+Tests for experiments.decode — protobuf-to-JSON decoder.
+
+Tests authored by Claude Opus 4.6 in full.
+"""
 
 from pathlib import Path
 

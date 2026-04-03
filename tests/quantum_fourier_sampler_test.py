@@ -28,6 +28,8 @@ Running
 
 Or standalone:
     python test_quantum_fourier_sampler.py
+
+Tests authored by Claude Opus 4.6 in full.
 """
 
 import sys
