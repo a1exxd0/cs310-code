@@ -5,13 +5,15 @@ uv sync
 ```
 
 # Run tests
+Use parallel workers matching the computer's core count:
 ```sh
-uv run pytest
+uv run pytest -n auto
 ```
 
 # Run experiments
+Use `--workers` to parallelise with the computer's core count:
 ```sh
-uv run python -m experiments.harness {scaling,bent,truncation,noise,soundness,average_case,gate_noise,all}
+uv run python -m experiments.harness {scaling,bent,truncation,noise,soundness,average_case,gate_noise,all} --workers $(nproc 2>/dev/null || sysctl -n hw.ncpu)
 ```
 
 # Decode experiment results
