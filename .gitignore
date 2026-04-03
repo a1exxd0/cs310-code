@@ -4,6 +4,7 @@
 
 # Artifacts
 *.egg-info/
+slurm_logs/
 
 # Python cache
 __pycache__/
@@ -13,3 +14,4 @@ docs/_build/
 
 # MacOS
 .DS_Store
+
