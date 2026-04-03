@@ -14,7 +14,7 @@ from experiments.harness.worker import TrialSpec, run_trials_parallel
 def run_gate_noise_experiment(
     n_range: range = range(4, 7),
     gate_noise_rates: Optional[list[float]] = None,
-    num_trials: int = 20,
+    num_trials: int = 24,
     epsilon: float = 0.3,
     qfs_shots: int = 2000,
     classical_samples_prover: int = 1000,
