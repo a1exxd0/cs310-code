@@ -374,32 +374,27 @@ class QuantumFourierSampler:
         n = self.n
         counts: dict[str, int] = {}
 
-        # Run one circuit at a time, each with a fresh child seed drawn
-        # from self._rng.  This is necessary because StatevectorSampler
-        # produces deterministic outcomes for identical circuits within
-        # a single run() batch.  By giving each circuit its own sampler
-        # with a unique seed, duplicate circuits (common when phi is
-        # near-deterministic or n is small) get independent measurement
-        # draws.  Reproducibility is preserved: the child seeds are
-        # governed by self._rng, which is seeded at construction.
+        # Build all circuits up front
+        circuits = []
         for _ in range(shots):
             f = self.state.sample_f(rng=self._rng)
             qc = self.state.circuit_prepare_f(f)
             for q in range(n + 1):
                 qc.h(q)
             qc.measure_all()
+            circuits.append(qc)
 
-            child_seed = int(self._rng.integers(0, 2**31))
+        if self._noise_model is not None:
+            # Gate-level noise: use AerSimulator with the noise model.
+            # The circuit is transpiled so that MCX gates decompose
+            # into basis gates (CX, H, X, etc.) to which the noise
+            # model's depolarising channels apply.
+            from qiskit_aer import AerSimulator
+            from qiskit import transpile
 
-            if self._noise_model is not None:
-                # Gate-level noise: use AerSimulator with the noise model.
-                # The circuit is transpiled so that MCX gates decompose
-                # into basis gates (CX, H, X, etc.) to which the noise
-                # model's depolarising channels apply.
-                from qiskit_aer import AerSimulator
-                from qiskit import transpile
-
-                backend = AerSimulator(noise_model=self._noise_model)
+            backend = AerSimulator(noise_model=self._noise_model)
+            for qc in circuits:
+                child_seed = int(self._rng.integers(0, 2**31))
                 qc_t = transpile(qc, backend)
                 result = backend.run(
                     qc_t, shots=1, seed_simulator=child_seed
@@ -409,12 +404,17 @@ class QuantumFourierSampler:
                     # strip them for consistency.
                     bs = bitstring.replace(" ", "")
                     counts[bs] = counts.get(bs, 0) + cnt
-            else:
-                sampler = StatevectorSampler(seed=child_seed)
-                job = sampler.run([qc], shots=1)
-                result = job.result()[0]
-                meas = result.data.meas
-                for bitstring, cnt in meas.get_counts().items():
+        else:
+            # Batch all circuits in a single sampler.run() call.
+            # Pass a Generator *object* (not an int) so the sampler
+            # holds a mutable reference whose state advances between
+            # PUBs — otherwise identical circuits get identical draws
+            # (Qiskit bug #13047).
+            child_rng = default_rng(int(self._rng.integers(0, 2**31)))
+            sampler = StatevectorSampler(seed=child_rng)
+            job = sampler.run(circuits, shots=1)
+            for pub_result in job.result():
+                for bitstring, cnt in pub_result.data.meas.get_counts().items():
                     counts[bitstring] = counts.get(bitstring, 0) + cnt
 
         return counts
