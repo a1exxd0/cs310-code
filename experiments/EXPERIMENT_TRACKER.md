@@ -163,28 +163,107 @@ honest baseline.
 
 ---
 
-## Pending Experiments
+## Pending Re-runs (n up to 20, 100 trials)
 
-None — all seven experiments plus the honest baseline are complete.
+All experiments except Exp 3 (gate noise) are being re-run with extended
+n ranges and 100 trials per cell for tighter confidence intervals. The
+initial results above remain as reference; the re-runs will supersede
+them.
+
+### Exp 1 -- Soundness (re-run)
+- **Target:** n=4..20, 100 trials per (n, strategy) cell.
+- **Output:** `results/soundness_4_20_100.pb`
+- **Command:**
+  ```bash
+  bash experiments/slurm/submit.sh soundness 4 20 100 8
+  ```
+- **Status:** PENDING.
+
+### Exp 2 -- Noise Sweep (re-run)
+- **Target:** n=4..20, 100 trials per (n, eta) cell.
+- **Output:** `results/noise_sweep_4_20_100.pb`
+- **Command:**
+  ```bash
+  bash experiments/slurm/submit.sh noise 4 20 100 8
+  ```
+- **Status:** PENDING.
+
+### Exp 4 -- Scaling Sweep (re-run)
+- **Target:** n=4..20, 100 trials per n.
+- **Output:** `results/scaling_4_20_100.pb`
+- **Command:**
+  ```bash
+  bash experiments/slurm/submit.sh scaling 4 20 100 8
+  ```
+- **Status:** PENDING.
+
+### Exp 5 -- Bent Functions (re-run)
+- **Target:** Even n from 4..20, 100 trials per n.
+- **Output:** `results/bent_4_20_100.pb`
+- **Command:**
+  ```bash
+  bash experiments/slurm/submit.sh bent 4 20 100 8
+  ```
+- **Status:** PENDING.
+
+### Exp 6 -- Verifier Truncation (re-run, independent per n)
+- **Target:** n in {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, 100 trials
+  per (epsilon, verifier_samples) cell per n. Truncation takes a fixed n
+  (no range sweep), so each n requires a separate submission.
+- **Output:** `results/truncation_{n}_{n}_100.pb` for each n.
+- **Commands:**
+  ```bash
+  for N in $(seq 4 14); do
+    bash experiments/slurm/submit.sh truncation $N $N 100 8
+  done
+  ```
+- **Status:** PENDING.
+
+### Exp 7 -- Average-Case (re-run)
+- **Target:** n=4..20, 100 trials per (n, family) cell.
+- **Output:** `results/average_case_4_20_100.pb`
+- **Command:**
+  ```bash
+  bash experiments/slurm/submit.sh average_case 4 20 100 8
+  ```
+- **Status:** PENDING.
+
+### Summary of re-run submissions
+
+| Exp | Command | Shards | Cells | Trials |
+|-----|---------|--------|-------|--------|
+| 1 (soundness) | `submit.sh soundness 4 20 100 8` | 8 | 17 n × 4 strategies = 68 | 6,800 |
+| 2 (noise) | `submit.sh noise 4 20 100 8` | 8 | 17 n × 9 eta = 153 | 15,300 |
+| 4 (scaling) | `submit.sh scaling 4 20 100 8` | 8 | 17 n | 1,700 |
+| 5 (bent) | `submit.sh bent 4 20 100 8` | 8 | 9 even n | 900 |
+| 6 (truncation) | 11 × `submit.sh truncation N N 100 8` | 88 | 11 n × 30 grid = 330 | 33,000 |
+| 7 (average case) | `submit.sh average_case 4 20 100 8` | 8 | 17 n × 4 families = 68 | 6,800 |
+| **Total** | 16 submissions | 128 | | **64,500** |
 
 ---
 
 ## Next Steps
 
-### Priority 1: Run remaining experiments
-1. ~~**Exp 3 (gate-level noise):**~~ DONE (2026-04-04). Ran n=4..8,
-   50 trials, 32 workers. Results in `gate_noise_4_8_50.pb`.
-2. ~~**Exp 7 (average-case):**~~ DONE (2026-04-02). Implemented
-   `make_k_sparse`, `make_random_boolean`, `make_sparse_plus_noise` in
-   `phi.py` and `experiments/harness/average_case.py`.
+### Priority 1: Submit re-runs
+1. Submit all re-run jobs listed above. Can be done in one batch:
+   ```bash
+   # All sweep experiments
+   for EXP in soundness noise scaling bent average_case; do
+     bash experiments/slurm/submit.sh $EXP 4 20 100 8
+   done
+   # Truncation (independent per n)
+   for N in $(seq 4 14); do
+     bash experiments/slurm/submit.sh truncation $N $N 100 8
+   done
+   ```
+2. Monitor with `squeue --me`. Gate noise (Exp 3) is already final
+   (`gate_noise_4_8_50.pb`) and does not need re-running.
 
-### Priority 2: Strengthen existing experiments
-3. ~~**Truncation at larger n:**~~ DONE (2026-04-02). Ran at n=10 and n=12
-   with 24 trials per cell. Results in `truncation_10_10_24.pb` and
-   `truncation_12_12_24.pb`.
-4. **Honest baseline diagnostics:** Extract or re-run baseline trials at
-   n={4, 10, 16} with explicit GL diagnostics (tree depth, nodes
-   explored, false positive/negative rates).
+### Priority 2: Post-run analysis
+3. **Honest baseline diagnostics:** Extract baseline metrics from the
+   new scaling re-run (eta=0.0 equivalent) at n={4, 10, 16, 20}.
+4. Verify that n=18 and n=20 results are tractable — GL extraction time
+   may become the bottleneck at these dimensions.
 
 ### Priority 3: Writing tasks
 5. Connect noise sweep results to Ma--Su--Deng threshold analysis.

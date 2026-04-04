@@ -350,9 +350,9 @@ def run_trials_parallel(
 
         full_count = len(specs)
         specs = shard_specs(specs, shard_index, num_shards)
-        label = f"{label} shard {shard_index}/{num_shards}" if label else f"shard {shard_index}/{num_shards}"
+        label = f"{label} shard {shard_index + 1}/{num_shards}" if label else f"shard {shard_index + 1}/{num_shards}"
         print(
-            f"  Shard {shard_index}/{num_shards}: {len(specs)} of {full_count} specs",
+            f"  Shard {shard_index + 1}/{num_shards}: {len(specs)} of {full_count} specs",
             flush=True,
         )
 

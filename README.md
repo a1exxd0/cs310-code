@@ -24,4 +24,4 @@ See the following papers:
 # TODO:
 - Clean up slurm scripts, probably integrate into the harness or otherwise
 - Re-run experiments
-- Error in shard naming (0-indexed when we should one-index for file names only/when we say "out of 7")
+

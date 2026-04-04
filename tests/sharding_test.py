@@ -180,11 +180,11 @@ class TestShardOutputPath:
 
     def test_basic(self):
         result = shard_output_path("results/scaling_4_10_20.pb", 3, 8)
-        assert result == "results/scaling_4_10_20_shard3of8.pb"
+        assert result == "results/scaling_4_10_20_shard4of8.pb"
 
     def test_preserves_directory(self):
         result = shard_output_path("/tmp/deep/nested/foo.pb", 0, 2)
-        assert result == "/tmp/deep/nested/foo_shard0of2.pb"
+        assert result == "/tmp/deep/nested/foo_shard1of2.pb"
 
     def test_preserves_extension(self):
         result = shard_output_path("test.pb", 1, 4)
@@ -192,7 +192,7 @@ class TestShardOutputPath:
 
     def test_single_shard(self):
         result = shard_output_path("test.pb", 0, 1)
-        assert result == "test_shard0of1.pb"
+        assert result == "test_shard1of1.pb"
 
 
 # ===================================================================
@@ -377,7 +377,7 @@ class TestShardedDeterminism:
         shard_paths = []
         for i in range(3):
             r = run_scaling_experiment(**kwargs, shard_index=i, num_shards=3)
-            p = tmp_path / f"scaling_shard{i}of3.pb"
+            p = tmp_path / f"scaling_shard{i + 1}of3.pb"
             r.save(str(p))
             shard_paths.append(p)
 

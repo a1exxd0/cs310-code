@@ -62,7 +62,7 @@ def shard_output_path(base_path: str, shard_index: int, num_shards: int) -> str:
     ``"results/scaling_4_10_20_shard3of8.pb"`` for shard 3 of 8.
     """
     p = Path(base_path)
-    return str(p.with_stem(f"{p.stem}_shard{shard_index}of{num_shards}"))
+    return str(p.with_stem(f"{p.stem}_shard{shard_index + 1}of{num_shards}"))
 
 
 def merge_shard_files(shard_paths: list[Path], output_path: Path) -> None:

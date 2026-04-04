@@ -29,7 +29,7 @@ source .venv/bin/activate
 
 mkdir -p results
 
-echo "=== SLURM Array Task ${SHARD_INDEX}/${NUM_SHARDS} ==="
+echo "=== SLURM Array Task $((SHARD_INDEX + 1))/${NUM_SHARDS} ==="
 echo "Experiment: ${EXPERIMENT}, n=[${N_MIN},${N_MAX}], trials=${TRIALS}"
 echo "Workers: ${WORKERS}, Node: $(hostname)"
 echo ""
