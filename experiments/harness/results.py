@@ -16,6 +16,7 @@ from experiments.proto import (
     average_case_pb2,
     gate_noise_pb2,
     k_sparse_pb2,
+    theta_sensitivity_pb2,
 )
 
 
@@ -254,6 +255,21 @@ class ExperimentResult:
                     classical_samples_prover=params["classical_samples_prover"],
                     classical_samples_verifier=params["classical_samples_verifier"],
                     misclassification_samples=params["misclassification_samples"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "theta_sensitivity":
+            return theta_sensitivity_pb2.ThetaSensitivityExperimentResult(
+                metadata=metadata,
+                parameters=theta_sensitivity_pb2.ThetaSensitivityParameters(
+                    n_range=params["n_range"],
+                    theta_values=params["theta_values"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    delta=params["delta"],
+                    qfs_shots=params["qfs_shots"],
+                    classical_samples_prover=params["classical_samples_prover"],
+                    classical_samples_verifier=params["classical_samples_verifier"],
                 ),
                 trials=trial_pbs,
             )
