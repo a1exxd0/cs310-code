@@ -36,6 +36,7 @@ from experiments.harness.bent import run_bent_experiment
 from experiments.harness.truncation import run_truncation_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
 from experiments.harness.soundness import run_soundness_experiment
+from experiments.harness.soundness_multi import run_soundness_multi_experiment
 from experiments.harness.k_sparse import run_k_sparse_experiment
 
 
@@ -729,6 +730,41 @@ class TestRunSoundnessExperiment:
             max_workers=1,
         )
         for strategy in ("wrong_parity", "partial_list", "inflated_list"):
+            st = [t for t in result.trials if strategy in t.phi_description]
+            reject_rate = sum(1 for t in st if not t.accepted) / len(st)
+            assert reject_rate >= 0.8, (
+                f"Expected {strategy} to be mostly rejected, got {reject_rate:.0%}"
+            )
+
+
+class TestRunSoundnessMultiExperiment:
+    """Integration test for the multi-element soundness experiment runner."""
+
+    def test_runs_and_returns_result(self):
+        result = run_soundness_multi_experiment(
+            n_range=range(4, 5),
+            k_range=[2],
+            num_trials=2,
+            classical_samples_verifier=1000,
+            base_seed=42,
+            max_workers=1,
+        )
+        assert isinstance(result, ExperimentResult)
+        assert result.experiment_name == "soundness_multi"
+        # 1 n * 1 k * 4 strategies * 2 trials = 8
+        assert len(result.trials) == 8
+
+    def test_dishonest_strategies_mostly_rejected(self):
+        """All multi-element dishonest strategies should be consistently rejected."""
+        result = run_soundness_multi_experiment(
+            n_range=range(4, 5),
+            k_range=[4],
+            num_trials=5,
+            classical_samples_verifier=3000,
+            base_seed=42,
+            max_workers=1,
+        )
+        for strategy in ("partial_real", "diluted_list", "shifted_coefficients", "subset_plus_noise"):
             st = [t for t in result.trials if strategy in t.phi_description]
             reject_rate = sum(1 for t in st if not t.accepted) / len(st)
             assert reject_rate >= 0.8, (
