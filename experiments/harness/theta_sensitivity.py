@@ -1,7 +1,6 @@
 """Experiment D: theta sensitivity — extraction boundary mapping (Gap 5)."""
 
 import time
-from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
@@ -15,7 +14,7 @@ _DEFAULT_THETA_VALUES = [0.05, 0.08, 0.10, 0.12, 0.15, 0.20, 0.30, 0.50]
 
 def run_theta_sensitivity_experiment(
     n_range: range = range(4, 9, 2),
-    theta_values: Optional[list[float]] = None,
+    theta_values: list[float] | None = None,
     num_trials: int = 20,
     epsilon: float = 0.3,
     delta: float = 0.1,

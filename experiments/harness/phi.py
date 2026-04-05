@@ -107,7 +107,7 @@ def _chi(s: int, x: int) -> float:
     return 1.0 - 2.0 * _parity_value(s, x)
 
 
-def _walsh_hadamard(phi_tilde: np.ndarray) -> np.ndarray:
+def walsh_hadamard(phi_tilde: np.ndarray) -> np.ndarray:
     r"""In-place Walsh--Hadamard transform (unnormalised).
 
     Given :math:`\tilde\phi(x) \in \{-1, +1\}^{2^n}`, returns
@@ -220,7 +220,7 @@ def make_random_boolean(
     N = 2**n
     phi_arr = rng.integers(0, 2, size=N).astype(np.float64)
     phi_tilde = 1.0 - 2.0 * phi_arr
-    spectrum = _walsh_hadamard(phi_tilde)
+    spectrum = walsh_hadamard(phi_tilde)
     target_s = int(np.argmax(np.abs(spectrum)))
     return phi_arr.tolist(), target_s
 

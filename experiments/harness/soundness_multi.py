@@ -1,4 +1,4 @@
-"""Experiment 8: Soundness against dishonest provers with multi-element targets."""
+"""Experiment C: Soundness against dishonest provers with multi-element targets."""
 
 import time
 
@@ -89,13 +89,13 @@ def run_soundness_multi_experiment(
     specs: list[TrialSpec] = []
     for n in n_range:
         for k in k_range:
-            # Generate a fresh k-sparse function for this (n, k) cell
-            phi, target_s, pw = make_k_sparse(n, k, rng)
             theta = min(epsilon, max(0.01, (1.0 / k) * 0.9))
 
             for strategy in strategies:
                 for _ in range(num_trials):
                     seed = int(rng.integers(0, 2**31))
+                    trial_rng = default_rng(seed)
+                    phi, target_s, pw = make_k_sparse(n, k, trial_rng)
                     specs.append(
                         TrialSpec(
                             n=n,

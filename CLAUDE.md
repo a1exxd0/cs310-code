@@ -22,7 +22,7 @@ uv run pytest -n auto
 # Run experiments
 Use `--workers` to parallelise with the computer's core count:
 ```sh
-uv run python -m experiments.harness {scaling,bent,truncation,noise,soundness,average_case,gate_noise,k_sparse,all} --workers $(nproc 2>/dev/null || sysctl -n hw.ncpu)
+uv run python -m experiments.harness {scaling,bent,truncation,noise,soundness,soundness_multi,average_case,gate_noise,k_sparse,theta_sensitivity,ab_regime,all} --workers $(nproc 2>/dev/null || sysctl -n hw.ncpu)
 ```
 
 # Run experiments on the DCS cluster (SLURM)

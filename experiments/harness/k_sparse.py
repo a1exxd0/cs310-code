@@ -1,4 +1,4 @@
-"""Experiment 8: k-Fourier-sparse verification path (Theorems 9/10/14/15)."""
+"""Experiment A: k-Fourier-sparse verification path (Theorems 9/10/14/15)."""
 
 import time
 from typing import Optional
@@ -76,6 +76,7 @@ def run_k_sparse_experiment(
                         seed=seed,
                         phi_description=f"k_sparse_k={k}_n={n}",
                         k=k if k > 1 else None,
+                        misclassification_samples=misclassification_samples,
                     )
                 )
 
