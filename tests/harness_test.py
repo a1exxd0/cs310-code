@@ -374,6 +374,29 @@ class TestExperimentResult:
         pb.ParseFromString(data)
         assert pb.parameters.strategies == ["random_list"]
 
+    def test_save_soundness_multi(self, sample_trial_result, tmp_path):
+        from experiments.proto import soundness_multi_pb2
+
+        result = self._make_experiment(
+            "soundness_multi",
+            [sample_trial_result],
+            {
+                "n_range": [4],
+                "k_range": [2, 4],
+                "num_trials": 1,
+                "epsilon": 0.3,
+                "strategies": ["partial_real"],
+            },
+        )
+        path = str(tmp_path / "test.pb")
+        result.save(path)
+
+        data = Path(path).read_bytes()
+        pb = soundness_multi_pb2.SoundnessMultiExperimentResult()
+        pb.ParseFromString(data)
+        assert pb.parameters.strategies == ["partial_real"]
+        assert pb.parameters.k_range == [2, 4]
+
     def test_save_unknown_experiment_raises(self, sample_trial_result, tmp_path):
         result = self._make_experiment("unknown", [sample_trial_result], {})
         with pytest.raises(ValueError, match="No proto schema"):
@@ -1116,3 +1139,85 @@ class TestMultiElementDishonestStrategies:
         spec = self._make_k_sparse_dishonest_spec("subset_plus_noise")
         result = _run_trial_worker(spec)
         assert not result.accepted
+
+
+class TestRunThetaSensitivityExperiment:
+    """Integration test for the theta sensitivity experiment runner."""
+
+    def test_runs_and_returns_result(self):
+        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+
+        result = run_theta_sensitivity_experiment(
+            n_range=range(4, 5),
+            theta_values=[0.1, 0.3],
+            num_trials=2,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            base_seed=42,
+            max_workers=1,
+        )
+        assert isinstance(result, ExperimentResult)
+        assert result.experiment_name == "theta_sensitivity"
+        # 1 n * 2 theta * 2 trials = 4
+        assert len(result.trials) == 4
+        assert result.wall_clock_s > 0
+
+    def test_theta_appears_in_phi_description(self):
+        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+
+        result = run_theta_sensitivity_experiment(
+            n_range=range(4, 5),
+            theta_values=[0.15],
+            num_trials=1,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            base_seed=42,
+            max_workers=1,
+        )
+        assert len(result.trials) == 1
+        assert "theta=0.15" in result.trials[0].phi_description
+
+    def test_low_theta_extracts_more(self):
+        """Lower theta should extract more coefficients (larger |L|)."""
+        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+
+        result = run_theta_sensitivity_experiment(
+            n_range=range(4, 5),
+            theta_values=[0.05, 0.50],
+            num_trials=5,
+            qfs_shots=2000,
+            classical_samples_prover=1000,
+            classical_samples_verifier=3000,
+            base_seed=42,
+            max_workers=1,
+        )
+        low_theta = [t for t in result.trials if "theta=0.05" in t.phi_description]
+        high_theta = [t for t in result.trials if "theta=0.5" in t.phi_description]
+        med_low = np.median([t.list_size for t in low_theta])
+        med_high = np.median([t.list_size for t in high_theta])
+        # At theta=0.05, all 4 coefficients (0.7 + 3*0.1) should be extracted
+        # At theta=0.50, only the dominant 0.7 should be extracted
+        assert med_low >= med_high, (
+            f"Expected lower theta to extract >= as many coefficients: "
+            f"theta=0.05 median |L|={med_low}, theta=0.50 median |L|={med_high}"
+        )
+
+    def test_save_roundtrip(self, tmp_path):
+        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+
+        result = run_theta_sensitivity_experiment(
+            n_range=range(4, 5),
+            theta_values=[0.1],
+            num_trials=1,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            base_seed=42,
+            max_workers=1,
+        )
+        path = str(tmp_path / "theta_sensitivity.pb")
+        result.save(path)
+        assert Path(path).exists()
+        assert Path(path).stat().st_size > 0
