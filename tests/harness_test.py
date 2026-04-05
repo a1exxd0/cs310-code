@@ -36,6 +36,7 @@ from experiments.harness.bent import run_bent_experiment
 from experiments.harness.truncation import run_truncation_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
 from experiments.harness.soundness import run_soundness_experiment
+from experiments.harness.k_sparse import run_k_sparse_experiment
 
 
 # ===================================================================
@@ -733,6 +734,58 @@ class TestRunSoundnessExperiment:
             assert reject_rate >= 0.8, (
                 f"Expected {strategy} to be mostly rejected, got {reject_rate:.0%}"
             )
+
+
+class TestRunKSparseExperiment:
+    """Integration test for the k-sparse experiment runner."""
+
+    def test_runs_and_returns_result(self):
+        result = run_k_sparse_experiment(
+            n_range=range(4, 5),
+            k_values=[1, 2],
+            num_trials=2,
+            qfs_shots=1000,
+            classical_samples_prover=500,
+            classical_samples_verifier=1500,
+            base_seed=42,
+            max_workers=1,
+        )
+        assert isinstance(result, ExperimentResult)
+        assert result.experiment_name == "k_sparse"
+        # 1 n * 2 k * 2 trials = 4
+        assert len(result.trials) == 4
+        assert result.wall_clock_s > 0
+
+    def test_k1_uses_parity_path(self):
+        """k=1 trials use verify_parity (k field is None)."""
+        result = run_k_sparse_experiment(
+            n_range=range(4, 5), k_values=[1], num_trials=2,
+            qfs_shots=500, classical_samples_prover=300,
+            classical_samples_verifier=500, base_seed=42, max_workers=1,
+        )
+        for t in result.trials:
+            assert t.k is None
+
+    def test_k2_uses_fourier_sparse_path(self):
+        """k=2 trials use verify_fourier_sparse (k field is 2)."""
+        result = run_k_sparse_experiment(
+            n_range=range(4, 5), k_values=[2], num_trials=2,
+            qfs_shots=1000, classical_samples_prover=500,
+            classical_samples_verifier=1500, base_seed=42, max_workers=1,
+        )
+        for t in result.trials:
+            assert t.k == 2
+
+    def test_save_roundtrip(self, tmp_path):
+        result = run_k_sparse_experiment(
+            n_range=range(4, 5), k_values=[2], num_trials=1,
+            qfs_shots=1000, classical_samples_prover=500,
+            classical_samples_verifier=1500, base_seed=42, max_workers=1,
+        )
+        path = str(tmp_path / "k_sparse.pb")
+        result.save(path)
+        assert Path(path).exists()
+        assert Path(path).stat().st_size > 0
 
 
 # ===================================================================
