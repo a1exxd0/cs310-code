@@ -78,6 +78,14 @@ class TrialSpec:
     k: Optional[int] = None
 
 
+def _compute_misclassification_rate(state, hypothesis, seed, num_samples=1000):
+    """Compute empirical P[h(x) != y] on fresh classical samples."""
+    rng = default_rng(seed)
+    xs, ys = state.sample_classical_batch(num_samples=num_samples, rng=rng)
+    predictions = hypothesis.evaluate_batch(xs, rng=rng)
+    return float(np.mean(predictions != ys))
+
+
 def _run_trial_worker(spec: TrialSpec) -> TrialResult:
     r"""Execute a single trial in a worker process.
 
@@ -143,19 +151,49 @@ def _run_trial_worker(spec: TrialSpec) -> TrialResult:
     # --- Verifier ---
     t1 = time.time()
     verifier = MoSVerifier(state, seed=spec.seed + 1_000_000)
-    result = verifier.verify_parity(
-        msg,
-        epsilon=spec.epsilon,
-        delta=spec.delta,
-        theta=spec.theta,
-        a_sq=spec.a_sq,
-        b_sq=spec.b_sq,
-        num_samples=spec.classical_samples_verifier,
-    )
+
+    if spec.k is not None and spec.k > 1:
+        result = verifier.verify_fourier_sparse(
+            msg,
+            epsilon=spec.epsilon,
+            k=spec.k,
+            delta=spec.delta,
+            theta=spec.theta,
+            a_sq=spec.a_sq,
+            b_sq=spec.b_sq,
+            num_samples=spec.classical_samples_verifier,
+        )
+    else:
+        result = verifier.verify_parity(
+            msg,
+            epsilon=spec.epsilon,
+            delta=spec.delta,
+            theta=spec.theta,
+            a_sq=spec.a_sq,
+            b_sq=spec.b_sq,
+            num_samples=spec.classical_samples_verifier,
+        )
     verifier_time = time.time() - t1
 
-    hyp_s = result.hypothesis.s if result.accepted and result.hypothesis else None
-    correct = hyp_s == spec.target_s if hyp_s is not None else False
+    # --- Extract hypothesis ---
+    from ql.verifier import FourierSparseHypothesis
+
+    hyp_s = None
+    hyp_coefficients = None
+    misclass_rate = None
+    correct = False
+
+    if result.accepted and result.hypothesis is not None:
+        if isinstance(result.hypothesis, FourierSparseHypothesis):
+            hyp_coefficients = dict(result.hypothesis.coefficients)
+            hyp_s = max(hyp_coefficients, key=lambda s: abs(hyp_coefficients[s]))
+            correct = hyp_s == spec.target_s
+            misclass_rate = _compute_misclassification_rate(
+                state, result.hypothesis, spec.seed + 2_000_000
+            )
+        else:
+            hyp_s = result.hypothesis.s
+            correct = hyp_s == spec.target_s if hyp_s is not None else False
 
     return TrialResult(
         n=spec.n,
@@ -182,6 +220,9 @@ def _run_trial_worker(spec: TrialSpec) -> TrialResult:
         a_sq=spec.a_sq,
         b_sq=spec.b_sq,
         phi_description=spec.phi_description,
+        k=spec.k,
+        hypothesis_coefficients=hyp_coefficients,
+        misclassification_rate=misclass_rate,
     )
 
 

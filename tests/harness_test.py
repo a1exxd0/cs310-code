@@ -17,6 +17,7 @@ from numpy.random import default_rng
 
 from experiments.harness.phi import (
     make_bent_function,
+    make_k_sparse,
     make_random_parity,
     make_single_parity,
 )
@@ -532,6 +533,62 @@ class TestRunTrialsParallel:
         """Empty spec list returns empty results."""
         results = run_trials_parallel([], max_workers=1)
         assert results == []
+
+
+class TestWorkerKSparseRouting:
+    """Tests for worker dispatch to verify_fourier_sparse when k > 1."""
+
+    def test_k_none_produces_parity_result(self):
+        """k=None trial produces result with k=None and no k-sparse fields."""
+        phi = make_single_parity(4, target_s=3)
+        spec = TrialSpec(
+            n=4, phi=phi, noise_rate=0.0, target_s=3, epsilon=0.3,
+            delta=0.1, theta=0.3, a_sq=1.0, b_sq=1.0, qfs_shots=500,
+            classical_samples_prover=300, classical_samples_verifier=500,
+            seed=42, phi_description="test_parity",
+        )
+        result = _run_trial_worker(spec)
+        assert result.k is None
+        assert result.hypothesis_coefficients is None
+        assert result.misclassification_rate is None
+
+    def test_k_2_produces_k_sparse_result(self):
+        """k=2 trial uses verify_fourier_sparse and produces k-sparse fields."""
+        rng = default_rng(99)
+        phi, target_s, pw = make_k_sparse(4, 2, rng)
+        spec = TrialSpec(
+            n=4, phi=phi, noise_rate=0.0, target_s=target_s,
+            epsilon=0.3, delta=0.1, theta=0.15, a_sq=pw, b_sq=pw,
+            qfs_shots=2000, classical_samples_prover=1000,
+            classical_samples_verifier=3000, seed=99,
+            phi_description="k_sparse_k=2", k=2,
+        )
+        result = _run_trial_worker(spec)
+        assert result.k == 2
+        if result.accepted:
+            assert isinstance(result.hypothesis_coefficients, dict)
+            assert len(result.hypothesis_coefficients) <= 2
+            assert isinstance(result.misclassification_rate, float)
+            assert 0.0 <= result.misclassification_rate <= 1.0
+
+    def test_k_sparse_completeness(self):
+        """Multiple k=2 trials at n=4 should mostly accept."""
+        rng = default_rng(0)
+        results = []
+        for _ in range(5):
+            seed = int(rng.integers(0, 2**31))
+            trial_rng = default_rng(seed)
+            phi, target_s, pw = make_k_sparse(4, 2, trial_rng)
+            spec = TrialSpec(
+                n=4, phi=phi, noise_rate=0.0, target_s=target_s,
+                epsilon=0.3, delta=0.1, theta=0.15, a_sq=pw, b_sq=pw,
+                qfs_shots=2000, classical_samples_prover=1000,
+                classical_samples_verifier=3000, seed=seed,
+                phi_description="test", k=2,
+            )
+            results.append(_run_trial_worker(spec))
+        accept_rate = sum(1 for r in results if r.accepted) / len(results)
+        assert accept_rate >= 0.4, f"Expected >= 40% acceptance, got {accept_rate:.0%}"
 
 
 # ===================================================================
