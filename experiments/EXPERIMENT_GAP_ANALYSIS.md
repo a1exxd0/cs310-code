@@ -237,6 +237,13 @@ near real coefficient magnitudes for sparse functions.
 **Impact**: Cannot detect finite-sample failures at the extraction
 boundary.
 
+**Status**: Addressed by `experiments/harness/theta_sensitivity.py`.
+Sweeps theta in {0.05, 0.08, 0.10, 0.12, 0.15, 0.20, 0.30, 0.50} against
+`make_sparse_plus_noise` (dominant 0.7, secondary 0.1 each). At theta ~ 0.20,
+secondary coefficients sit at the extraction boundary (|phi_hat| = 0.1 vs
+threshold theta/2 = 0.10). Records |L|, acceptance outcome, and accumulated
+weight per trial.
+
 ### Gap 6: Correctness metric mismatch for k-sparse (LOW-MEDIUM)
 
 **Location**: `worker.py:154`
@@ -352,7 +359,7 @@ lists even when the adversary includes some genuine heavy coefficients.
 - Edge cases in the independent estimation when some coefficients
   are real and some are fabricated.
 
-### Experiment D: Theta Sensitivity (closes Gap 5)
+### Experiment D: Theta Sensitivity (closes Gap 5) -- IMPLEMENTED
 
 **Goal**: Map the extraction boundary where coefficients enter/exit L.
 
@@ -379,6 +386,9 @@ lists even when the adversary includes some genuine heavy coefficients.
 - DKW-based spectrum approximation failures at boundary.
 - Interaction between theta and the acceptance threshold when
   marginal coefficients affect accumulated weight.
+
+**Implementation**: `experiments/harness/theta_sensitivity.py`
+CLI: `python -m experiments.harness theta_sensitivity`
 
 ---
 
