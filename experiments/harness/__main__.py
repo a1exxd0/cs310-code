@@ -28,6 +28,7 @@ from experiments.harness.bent import run_bent_experiment
 from experiments.harness.truncation import run_truncation_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
 from experiments.harness.soundness import run_soundness_experiment
+from experiments.harness.soundness_multi import run_soundness_multi_experiment
 
 
 def _add_common_args(parser: argparse.ArgumentParser):
@@ -146,6 +147,20 @@ def _run_soundness(args):
     return [r]
 
 
+def _run_soundness_multi(args):
+    output_dir = Path(args.output_dir)
+    soundness_trials = max(args.trials, 50)
+    r = run_soundness_multi_experiment(
+        n_range=range(args.n_min, args.n_max + 1),
+        num_trials=soundness_trials,
+        base_seed=args.seed,
+        max_workers=args.workers,
+        **_shard_kwargs(args),
+    )
+    r.save(_output_path(output_dir, f"soundness_multi_{args.n_min}_{args.n_max}_{soundness_trials}", args))
+    return [r]
+
+
 def _run_average_case(args):
     output_dir = Path(args.output_dir)
     r = run_average_case_experiment(
@@ -225,6 +240,7 @@ def _run_all(args):
     experiments.extend(_run_truncation(args))
     experiments.extend(_run_noise(args))
     experiments.extend(_run_soundness(args))
+    experiments.extend(_run_soundness_multi(args))
     experiments.extend(_run_average_case(args))
     experiments.extend(_run_gate_noise(args))
     experiments.extend(_run_k_sparse(args))
@@ -265,6 +281,10 @@ def main():
 
     # --- soundness ---
     sp = subparsers.add_parser("soundness", help="Soundness against dishonest provers")
+    _add_common_args(sp)
+
+    # --- soundness_multi ---
+    sp = subparsers.add_parser("soundness_multi", help="Soundness against dishonest provers with multi-element targets")
     _add_common_args(sp)
 
     # --- average_case ---
@@ -330,6 +350,7 @@ def main():
         "truncation": _run_truncation,
         "noise": _run_noise,
         "soundness": _run_soundness,
+        "soundness_multi": _run_soundness_multi,
         "average_case": _run_average_case,
         "gate_noise": _run_gate_noise,
         "k_sparse": _run_k_sparse,

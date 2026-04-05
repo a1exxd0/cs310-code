@@ -16,6 +16,7 @@ from experiments.proto import (
     average_case_pb2,
     gate_noise_pb2,
     k_sparse_pb2,
+    soundness_multi_pb2,
     theta_sensitivity_pb2,
 )
 
@@ -210,6 +211,18 @@ class ExperimentResult:
                 metadata=metadata,
                 parameters=soundness_pb2.SoundnessParameters(
                     n_range=params["n_range"],
+                    num_trials=params["num_trials"],
+                    epsilon=params["epsilon"],
+                    strategies=params["strategies"],
+                ),
+                trials=trial_pbs,
+            )
+        elif self.experiment_name == "soundness_multi":
+            return soundness_multi_pb2.SoundnessMultiExperimentResult(
+                metadata=metadata,
+                parameters=soundness_multi_pb2.SoundnessMultiParameters(
+                    n_range=params["n_range"],
+                    k_range=params["k_range"],
                     num_trials=params["num_trials"],
                     epsilon=params["epsilon"],
                     strategies=params["strategies"],
