@@ -205,36 +205,58 @@ constraint.
 
 **Data:** `soundness_multi_4_16_100.pb` (n=4..16, k in {2,4}, 4 strategies)
 
-**Implementation caveat.** The dishonest trial code path calls `verify_parity()`
-rather than `verify_fourier_sparse()`. This means the experiment tests soundness
-under the *parity* verification threshold (a^2 - eps^2/8) from Theorem 12, not
-the k-sparse threshold (a^2 - eps^2/(128k^2)) from Theorem 15. Consequently,
-this experiment tests whether the parity protocol is sound against adversaries
-targeting k-sparse functions -- a valid but different question from whether the
-k-sparse protocol (Theorem 15) is sound. All threshold-related conclusions below
-should be read with this caveat.
+**This experiment now uses the correct k-sparse verification threshold** from
+Theorem 15 (Step 4): the verifier accepts iff the accumulated weight exceeds
+a^2 - eps^2/(128k^2). The list-size bound is 64*b^2/theta^2 (Theorem 15,
+Step 3). An earlier version of this experiment incorrectly used the parity
+threshold (a^2 - eps^2/8 from Theorem 12); the results below reflect the
+corrected implementation.
 
-**Soundness maintained for 7 of 8 (strategy, k) combinations.** Partial_real,
-shifted_coefficients, and diluted_list achieve 100% (or near-100%) rejection at
-both k=2 and k=4. All rejections are via the weight check.
+**Soundness maintained for 7 of 8 (strategy, k) combinations.** Rejection rates
+by strategy and k, averaged across all n:
+
+| Strategy              | k=2 mean | k=2 min (n) | k=4 mean | k=4 min (n) |
+|-----------------------|----------|-------------|----------|-------------|
+| Partial real          | 100%     | 100%        | 100%     | 100%        |
+| Diluted list          | 98.5%    | 96% (n=4)   | 100%     | 100%        |
+| Shifted coefficients  | 100%     | 100%        | 100%     | 100%        |
+| Subset + noise        | 86.8%    | 82% (n=7)   | 98.9%    | 98% (n=5)   |
+
+Partial_real, shifted_coefficients, and diluted_list all exceed the 1-delta = 0.9
+guarantee at every n for both k values. All rejections are via the weight check
+(Step 4); the list-size bound (Step 3) is never triggered.
 
 **Boundary case: subset_plus_noise at k=2.** This strategy sends the single
-heaviest real Fourier coefficient plus marginal fakes. Rejection is 75.9% (range
-68--83%), below 1-delta = 0.9. However, this strategy is *partially honest*: it
-includes a legitimate heavy coefficient. Whether the 24% acceptance rate
-constitutes a soundness violation depends on whether the accepted hypotheses have
-high error. The experiment does not record misclassification for dishonest
-trials, so we cannot determine whether accepted hypotheses are genuinely bad. If
-the dominant coefficient carries enough information for a reasonable hypothesis,
-the verifier's acceptance may be correct behaviour rather than a soundness
-failure.
+heaviest real Fourier coefficient plus marginal fakes. Rejection is 86.8% (range
+82--92%), below 1-delta = 0.9 at most n values. However, this strategy is
+*partially honest*: it includes a legitimate heavy coefficient. Whether the ~13%
+acceptance rate constitutes a soundness violation depends on whether the accepted
+hypotheses have high error. The paper's soundness guarantee (Definition 7,
+Eq. 18) is a combined condition: Pr[V accepts AND hypothesis has error >
+alpha*opt + eps] <= delta. The experiment does not record misclassification for
+dishonest trials, so we cannot determine whether accepted hypotheses are
+genuinely bad. If the dominant coefficient carries enough information for a
+reasonable hypothesis, the verifier's acceptance may be correct behaviour rather
+than a soundness failure.
 
-**Increasing k from 2 to 4 improves rejection (subset_plus_noise: 75.9% to
-97.2%).** Since the experiment uses the parity threshold a^2 - eps^2/8 (not a
-k-dependent threshold), the improvement is NOT driven by a tighter threshold.
-Instead, at k=4, Dirichlet-drawn coefficients spread mass across more terms, so
-the single heaviest coefficient carries less weight on average, making it harder
-to pass the (k-independent) parity threshold.
+**Effect of switching to the k-sparse threshold.** Compared to the earlier
+(incorrect) run using the parity threshold, rejection rates increased:
+subset_plus_noise at k=2 improved from 75.9% to 86.8%, and at k=4 from 97.2%
+to 98.9%. This is expected: the k-sparse threshold a^2 - eps^2/(128k^2) is
+tighter than the parity threshold a^2 - eps^2/8 (the subtracted term is
+smaller), so the verifier demands more accumulated weight to accept.
+
+**Increasing k from 2 to 4 improves rejection (subset_plus_noise: 86.8% to
+98.9%).** Two effects combine: (i) at k=4, Dirichlet-drawn coefficients spread
+mass across more terms, so the single heaviest coefficient carries less weight
+on average; (ii) the k-sparse threshold a^2 - eps^2/(128k^2) tightens as k
+grows (the subtracted term shrinks), raising the bar for acceptance. Both
+effects make it harder for a partially-honest strategy to pass the weight check.
+
+**Rejection rates are flat across n.** For all strategies and k values, rejection
+shows no systematic dependence on n. This is consistent with the protocol's
+soundness mechanism, which relies on Fourier weight estimation rather than
+dimension-dependent properties.
 
 
 ---
@@ -296,7 +318,8 @@ sensitivity.
 
 ### 3.2 Gate-Level Noise
 
-**Data:** `gate_noise_4_8_50.pb` (n=4..8, 50 trials per cell, 7 error rates)
+**Data:** `gate_noise_4_8_50.pb` (n=4..8, 50 trials per cell, 12 error rates:
+p in {0, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5})
 
 **No direct theoretical prediction exists.** The paper analyses label-flip noise
 (Definition 5, Lemmas 4--6) but not depolarising circuit noise. This experiment
@@ -304,26 +327,82 @@ provides novel empirical evidence beyond the paper's scope.
 
 **Sharp threshold behaviour with strong n-dependence:**
 
-| n | Robust up to p= | Cliff between        | Accept at p=0.1 |
-|---|-----------------|----------------------|-----------------|
-| 4 | 0.1             | no cliff observed    | 100%            |
-| 5 | 0.1             | mild (p=0.005: 98%)  | 98%             |
-| 6 | 0.001           | p=0.001 and p=0.005  | 2%              |
-| 7 | 0 (noiseless)   | p=0 and p=0.001      | 0%              |
-| 8 | 0 (noiseless)   | p=0 and p=0.001      | 0%              |
+| n | Robust up to p= | Cliff between             | Accept at p=0.1 | Accept at p=0.5 |
+|---|-----------------|---------------------------|-----------------|-----------------|
+| 4 | 0.5             | no cliff observed         | 100%            | 100%            |
+| 5 | 0.002           | mild dips (p=0.02: 90%)   | 92%             | 98%             |
+| 6 | 0.001           | p=0.001 → p=0.002 (100→8%)| 4%             | 12%             |
+| 7 | 0.0001          | p=0.0001 → p=0.0005 (100→2%)| 0%           | 0%              |
+| 8 | 0.0001          | p=0.0001 → p=0.0005 (100→0%)| 0%           | 0%              |
+
+The finer rate granularity (12 rates spanning 4 orders of magnitude) pinpoints the
+critical thresholds precisely. For n=6, the cliff sits between p=0.001 and p=0.002;
+for n=7 and n=8, it sits between p=0.0001 and p=0.0005. The transition is
+essentially binary -- no intermediate degradation is observed at any n.
+
+**n=5 shows non-monotonic acceptance across noise rates.** Unlike the clean
+threshold seen at n >= 6, n=5 dips to 90% at p=0.02 but rebounds to 98--100% at
+p=0.05 and p=0.5. This irregular pattern, with all rates remaining above 90%,
+is consistent with the parameter-regime explanation below: at n=5 the uniform
+floor barely exceeds the extraction threshold, so noise occasionally disrupts
+extraction but the correct string still enters L in most trials.
+
+**Why n=4 and n=5 accept at all noise levels (parameter artifact, not genuine
+robustness).** The apparent noise tolerance at small n is an artifact of the
+extraction threshold being too permissive relative to the search space size.
+
+The protocol has two independent stages:
+
+1. The **prover** runs (noisy) QFS and includes any string s in its list L if the
+   empirical post-selected probability exceeds theta^2/4 = 0.0225.
+2. The **verifier** independently estimates Fourier coefficients from its own
+   *noiseless* classical samples and checks accumulated weight against
+   a^2 - eps^2/8 = 0.98875.
+
+Gate noise only corrupts stage 1. Stage 2 is unaffected because the verifier
+draws classical samples from the true distribution.
+
+The critical observation is that for n <= 5, the uniform noise floor 1/2^n
+**exceeds** the extraction threshold theta^2/4:
+
+| n | 1/2^n (uniform floor) | theta^2/4 (extraction threshold) | Relationship       |
+|---|-----------------------|----------------------------------|---------------------|
+| 4 | 0.0625                | 0.0225                           | Floor **above** threshold |
+| 5 | 0.0313                | 0.0225                           | Floor **above** threshold |
+| 6 | 0.0156                | 0.0225                           | Floor **below** threshold |
+| 7 | 0.0078                | 0.0225                           | Floor **below** threshold |
+
+The crossover occurs at n = log_2(4/theta^2) = log_2(44.4) = 5.47, matching the
+n=5 -> n=6 transition in the data exactly.
+
+When 1/2^n >= theta^2/4 (i.e., n <= 5), even a *completely* noisy QFS circuit
+producing a uniform distribution over 2^n strings would cause every string to
+pass the extraction threshold. This means the correct parity string s* is
+guaranteed to appear in L regardless of noise. Since the verifier then estimates
+g_hat(s*) from noiseless samples, it finds g_hat(s*)^2 ~ 1.0 >= 0.98875 and
+accepts. The protocol is not genuinely tolerating noise at n=4; it is
+incidentally including the right answer in a brute-force list of all 2^n = 16
+possible strings.
+
+For n >= 6, the prover must actually resolve the target string from the QFS
+distribution. Gate depolarising noise across the transpiled MCX + Hadamard
+circuit (O(n) depth) smears the signal below the extraction threshold, so the
+correct string fails to enter L and the verifier rejects.
 
 Gate noise is qualitatively different from label-flip noise. No formal
 equivalence mapping between gate depolarising rate p and label-flip rate eta
-exists, so direct comparison is not rigorous. However, at p=0.01 the protocol
-fails completely for n >= 6, while at eta=0.01 (label-flip) the protocol shows
-no degradation. Gate noise corrupts the QFS circuit itself (Hadamard layer and
-measurements), while label-flip noise only affects the data. The sharp
-n-dependence reflects multiplicative accumulation of gate errors across O(n)
-circuit depth.
+exists, so direct comparison is not rigorous. However, at p=0.002 the protocol
+already fails for n=6 (8% acceptance), while at eta=0.01 (label-flip) the
+protocol shows no degradation at any n. Gate noise corrupts the QFS circuit
+itself (Hadamard layer and oracle), while label-flip noise only affects the data
+distribution.
 
 **Limitations.** The experiment covers only n=4..8 (5 values) with 50 trials each,
 providing limited statistical power (CIs are wide, e.g., [92.9%, 100%] for 50/50
-acceptance). The sharp threshold observed at n=6--7 cannot be traced further.
+acceptance). The 12 error rates spanning p=0.0001 to p=0.5 provide good
+resolution of the critical thresholds but the small-n acceptance remains a
+parameter regime artifact (theta = eps = 0.3); a tighter theta or larger n range
+would show rejection at small n too.
 
 
 ### 3.3 a^2 != b^2 Regime
@@ -543,14 +622,14 @@ accepts an incorrect hypothesis. This is consistent with the soundness bound
 | Thm 12 completeness | Accept >= 1-delta | Honest prover accepted | scaling | **Confirmed** (100% for parities) |
 | Thm 12 soundness | Reject >= 1-delta | Dishonest prover rejected | soundness | **Confirmed** (100% for 3/4 strategies) |
 | Cor 7 / Thm 15 | Misclass <= 2*opt + eps | k-sparse learning bound | k_sparse | **Partially confirmed** (holds k<=4; violated k=8 due to precondition failures) |
-| Thm 12 soundness | Multi-element rejection | Reject >= 1-delta | soundness_multi | **Mostly confirmed** (7/8 combos; see caveat on verify_parity vs verify_fourier_sparse) |
+| Thm 15 soundness | Multi-element rejection | Reject >= 1-delta | soundness_multi | **Mostly confirmed** (7/8 combos at correct k-sparse threshold; subset_plus_noise k=2 at 86.8% -- partially honest strategy) |
 | Lemma 6 + Parseval | Weight = (1-2*eta)^2 | MoS noise attenuation | noise_sweep | **Precisely confirmed** (<3% error) |
 | Thm 12 | Noisy verification | Protocol works with adapted params | noise_sweep | **Confirmed** (no breakdown up to eta=0.40) |
 | Thm 13 | eps >= 2*sqrt(b^2-a^2) | Accuracy lower bound (worst-case) | ab_regime | **Consistent** (not tight for typical functions) |
 | Cor 1/5 | Extraction threshold | QFS resolves coeffs > theta | bent, theta_sens | **Confirmed** (sharp transition; n=4 in uncertain zone) |
 | Thm 12 Step 3 | Verifier: O(|L|^2/eps^4) | Sample complexity | truncation | **Qualitatively confirmed** |
 | Def 14 | [a^2, b^2] promise | Distributional class | ab_regime | **Confirmed** (wider gap lowers threshold) |
-| -- (no theorem) | Gate noise | Novel / empirical | gate_noise | **Novel finding** (sharp threshold, no equivalence to label-flip) |
+| -- (no theorem) | Gate noise | Novel / empirical | gate_noise | **Novel finding** (sharp threshold: n=6 cliff at p=0.001→0.002, n=7,8 at p=0.0001→0.0005; small-n acceptance is parameter artifact: 1/2^n > theta^2/4) |
 
 
 ### 5.2 Key Cross-Cutting Findings
@@ -575,20 +654,26 @@ accepts an incorrect hypothesis. This is consistent with the soundness bound
      from a subset of detected coefficients may not reach the threshold.
    - *Corollary 5 lower bound:* eps > 2^{-(n/2-2)} is violated for small n.
 
-4. **Gate noise is an unexplored theoretical frontier.** Sharp threshold behaviour
-   with strong n-dependence is qualitatively different from label-flip noise.
-   No formal equivalence exists between gate error rate and label-flip rate.
+4. **Gate noise is an unexplored theoretical frontier.** The sharp n=5->6
+   transition is explained by a parameter regime artifact: for n <= 5, the
+   uniform noise floor 1/2^n exceeds the prover's extraction threshold
+   theta^2/4, so even fully-corrupted QFS trivially includes the correct
+   string. Genuine noise sensitivity begins at n >= 6, where the prover must
+   actually resolve the target from QFS. No formal equivalence exists between
+   gate error rate and label-flip rate.
 
 5. **Correctness nearly always tracks acceptance.** Across all experiments, false
    accepts are extremely rare (observed only in truncation at tight margins with
    very few verifier samples). For single-parity targets, acceptance implies
    correctness by construction (only one coefficient to identify).
 
-6. **The soundness_multi experiment has a known limitation:** it uses
-   `verify_parity()` rather than `verify_fourier_sparse()` for dishonest trials,
-   meaning it tests the parity threshold (Thm 12) against k-sparse adversaries,
-   not the k-sparse threshold (Thm 15). Conclusions about k-dependent soundness
-   thresholds should be interpreted accordingly.
+6. **The soundness_multi experiment now uses the correct k-sparse threshold**
+   (Thm 15, a^2 - eps^2/(128k^2)). The only remaining boundary case is
+   subset_plus_noise at k=2 (86.8% rejection, below 1-delta=0.9). This
+   strategy is partially honest (includes the heaviest real coefficient), so
+   acceptance may reflect correct verifier behaviour rather than a soundness
+   violation. Recording misclassification for dishonest trials would resolve
+   this ambiguity.
 
 
 ### 5.3 Parameter Sensitivity Summary
@@ -600,6 +685,6 @@ accepts an incorrect hypothesis. This is consistent with the soundness bound
 | eps (accuracy) | truncation, ab_regime | Medium: affects threshold margin tau = a^2-eps^2/8 | Yes |
 | eta (label noise) | noise_sweep | Low with adaptation; weight tracks (1-2*eta)^2 | Yes (Lemma 6 + Parseval) |
 | k (sparsity) | k_sparse, avg_case | High: weight margin tightens as 1/(128k^2) | Partially (precondition violations for large k) |
-| gate error rate | gate_noise | Very high: sharp threshold at p ~ 0.001 for n >= 7 | No theorem exists (novel) |
+| gate error rate | gate_noise | Very high: sharp threshold (n=6 at p~0.002, n=7,8 at p~0.0005); small-n acceptance is a parameter artifact (1/2^n > theta^2/4) | No theorem exists (novel) |
 | gap (b^2-a^2) | ab_regime | Medium: wider gap lowers a^2 and thus tau | Yes (Thm 13 worst-case bound not tight) |
 | verifier samples | truncation | High for tight margins (small eps) | Yes (O(|L|^2/eps^4) qualitatively) |
