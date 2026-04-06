@@ -203,11 +203,16 @@ median |L|, median total_copies, hypothesis_coefficients accuracy.
 **Metrics to extract per (n, strategy):** rejection rate, outcome breakdown
 (reject_list_too_large vs reject_insufficient_weight).
 
-| Artefact | Type | What it shows |
-|---|---|---|
-| Plot: Rejection by strategy | Grouped bar chart | Rejection rate (y) by strategy (x-groups), bars for each n. Four strategies: random_list, wrong_parity, partial_list, inflated_list |
-| Plot: Rejection mechanism breakdown | Stacked bar chart | For each strategy: proportion rejected by list-size check (Step 3) vs weight check (Step 4). Shows *how* the protocol catches each cheat |
-| Table: Soundness summary | Table | Per (strategy, n): rejection rate with 95% Wilson CI |
+| Artefact | Type | What it shows | Status |
+|---|---|---|---|
+| Plot: Rejection by strategy | Grouped bar chart | Rejection rate (y) by strategy (x-groups), bars for each n. Four strategies: random_list, wrong_parity, partial_list, inflated_list | DONE |
+| Plot: Rejection mechanism breakdown | Stacked bar chart | For each strategy: proportion rejected by list-size check (Step 3) vs weight check (Step 4). Shows *how* the protocol catches each cheat | DONE |
+| Plot: Rejection mechanism by n | Faceted stacked bar | Per-strategy breakdown across all n values (bonus artefact) | DONE |
+| Table: Soundness summary | Table (CSV + LaTeX) | Per (strategy, n): rejection rate with 95% Wilson CI | DONE |
+
+**Output directory:** `results/figures/soundness/`
+
+**Script:** `results/figures/soundness/plot_soundness.py`
 
 **Theoretical benchmarks:**
 - Soundness guarantee: rejection probability >= 1 - delta (Thms 7, 8)
@@ -219,6 +224,12 @@ median |L|, median total_copies, hypothesis_coefficients accuracy.
 - Do all strategies get rejected at the theoretical rate?
 - Which rejection mechanism (list-size vs weight) fires for each strategy?
 - Does soundness strengthen or weaken as n grows?
+
+**Findings:**
+- Wrong parity, partial list, inflated list: 100% rejection at all n (exceeds 1-delta=0.9).
+- Random list: rejection rises from 71% (n=4) to 100% (n>=11), matching 1-5/2^n collision probability.
+- All rejections are via weight check (Step 4); no strategy triggers the list-size bound (Step 3).
+  This is expected: all lists are <=10 entries vs the bound 4/theta^2 ~ 44.
 
 ---
 

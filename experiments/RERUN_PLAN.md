@@ -13,37 +13,37 @@ extended n ranges, and max 5 SLURM shards per submission.
 
 ```bash
 # Exp 1 -- Soundness (single-parity dishonest prover)
-bash experiments/slurm/submit.sh soundness 4 20 100 5
+bash experiments/slurm/submit.sh soundness 4 20 100 6
 
 # Exp 2 -- Noise Sweep (label-flip, eta = 0..0.4)
-bash experiments/slurm/submit.sh noise 4 16 100 5
+bash experiments/slurm/submit.sh noise 4 16 100 6
 
 # Exp 3 -- Gate Noise (depolarising circuit noise)
 # n=4..8 only: protocol breaks down at n>=7 with any gate noise,
 # and circuit simulation cost is exponential in n.
 # 50 trials retained (already final in gate_noise_4_8_50.pb).
-bash experiments/slurm/submit.sh gate_noise 4 8 50 5
+bash experiments/slurm/submit.sh gate_noise 4 8 50 6
 
 # Exp 4 -- Scaling Sweep (honest baseline)
-bash experiments/slurm/submit.sh scaling 4 16 100 5
+bash experiments/slurm/submit.sh scaling 4 16 100 6
 
 # Exp 5 -- Bent Functions (even n only, auto-adjusted)
-bash experiments/slurm/submit.sh bent 4 16 100 5
+bash experiments/slurm/submit.sh bent 4 16 100 6
 
 # Exp 7 -- Average-Case Performance (4 function families)
-bash experiments/slurm/submit.sh average_case 4 16 100 5
+bash experiments/slurm/submit.sh average_case 4 16 100 6
 
 # Gap 1/4 -- k-Sparse Verification Path (even n, k=1,2,4,8)
-bash experiments/slurm/submit.sh k_sparse 4 16 100 5
+bash experiments/slurm/submit.sh k_sparse 4 16 100 6
 
 # Gap 3 -- Multi-Element Soundness (k-sparse dishonest prover)
-bash experiments/slurm/submit.sh soundness_multi 4 16 100 5
+bash experiments/slurm/submit.sh soundness_multi 4 16 100 6
 
 # Gap 5 -- Theta Sensitivity (even n, 8 theta values)
-bash experiments/slurm/submit.sh theta_sensitivity 4 16 100 5
+bash experiments/slurm/submit.sh theta_sensitivity 4 16 100 6
 
 # Gap 2 -- a^2 != b^2 Regime (6 gap values)
-bash experiments/slurm/submit.sh ab_regime 4 16 100 5
+bash experiments/slurm/submit.sh ab_regime 4 16 100 6
 ```
 
 ### Truncation (Exp 6) -- One Submission Per n
