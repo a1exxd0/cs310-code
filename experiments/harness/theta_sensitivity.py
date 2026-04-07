@@ -39,6 +39,40 @@ def run_theta_sensitivity_experiment(
 
     Records :math:`|L|`, acceptance outcome, and accumulated weight
     per trial to map the extraction frontier (Corollary 5).
+
+    .. warning::
+
+       **Maps the acceptance boundary; does NOT validate the
+       :math:`1/\vartheta^4` sample-complexity scaling.** Two MAJOR
+       caveats from ``audit/theta_sensitivity.md``:
+
+       - **M1.** The hard-coded ``qfs_shots=2000``,
+         ``classical_samples_prover=1000`` and
+         ``classical_samples_verifier=3000`` override the
+         :math:`\vartheta`-dependent formulas in
+         :meth:`ql.prover.MoSProver.run_protocol` (lines 316-321) and
+         :func:`ql.verifier.MoSVerifier._verify_core` (lines 487-497).
+         For :math:`\vartheta = 0.05` the analytic prover budget is
+         :math:`\sim 1.5 \times 10^8` shots vs 2000 used (5 orders
+         short); the verifier budget is :math:`\sim 5 \times 10^6` vs
+         3000.  The experiment maps where the verifier accepts/rejects;
+         it does NOT empirically test the theoretical
+         :math:`1/\vartheta^4` scaling.
+
+       - **M2.** :func:`make_sparse_plus_noise` has nonzero Fourier
+         coefficients of magnitude exactly 0.1, so for any
+         :math:`\vartheta > 0.1` the function lies *outside*
+         :math:`\mathfrak{D}^{\mathrm{func}}_{U_n;\ge\vartheta}`
+         (Definition 11).  This means Theorems 8/12 do not formally
+         apply at :math:`\vartheta \in \{0.12, 0.15, 0.20, 0.30,
+         0.50\}` --- the experiment is intentionally probing the
+         out-of-promise regime.
+
+       To actually validate the :math:`1/\vartheta^4` scaling, the
+       sweep would need to be re-run with ``qfs_shots=None``,
+       ``classical_samples_prover=None`` and
+       ``classical_samples_verifier=None`` so the analytic formulas
+       drive the per-trial budgets.  See ``audit/FOLLOW_UPS.md``.
     """
     if theta_values is None:
         theta_values = list(_DEFAULT_THETA_VALUES)

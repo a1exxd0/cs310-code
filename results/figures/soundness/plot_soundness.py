@@ -71,30 +71,57 @@ def build_tables(
     dict[tuple[str, int], float],          # rejection_rate[(strategy, n)]
     dict[tuple[str, int], tuple[float, float]],  # ci[(strategy, n)]
     dict[tuple[str, int, str], int],       # mechanism_counts[(strategy, n, outcome)]
+    dict[tuple[str, int], float],          # bad_accept_rate[(strategy, n)]
+    dict[tuple[str, int], tuple[float, float]],  # bad_accept_ci[(strategy, n)]
     list[int],                              # sorted n values
 ]:
-    """Aggregate trial-level data into per-(strategy, n) summaries."""
+    """Aggregate trial-level data into per-(strategy, n) summaries.
+
+    Audit fix m1 (audit/soundness.md): the operationally relevant
+    soundness event from Eq. (18) is
+    ``Pr[accepted AND not hypothesis_correct]``, not
+    ``Pr[accepted]``.  For the ``random_list`` strategy, the verifier
+    is allowed to accept when the random list happens to contain the
+    true parity (the output hypothesis is then correct).  Reporting
+    ``rejection_rate`` alone lumps these "lucky correct accepts" with
+    potential soundness violations and falsely makes the dip below
+    :math:`1 - \\delta` at small ``n`` look like a violation.  This
+    function now also returns ``bad_accept_rate`` and its 95% CI.
+    """
     counts: dict[tuple[str, int], int] = defaultdict(int)
     rejects: dict[tuple[str, int], int] = defaultdict(int)
+    bad_accepts: dict[tuple[str, int], int] = defaultdict(int)
     mechanisms: dict[tuple[str, int, str], int] = defaultdict(int)
 
     for t in trials:
         strategy = t["phiDescription"].replace("soundness_", "")
         n = t["n"]
         counts[(strategy, n)] += 1
-        if not t.get("accepted", False):
+        accepted = bool(t.get("accepted", False))
+        if not accepted:
             rejects[(strategy, n)] += 1
+        # Eq. (18) bad-accept event.  Guard on ``accepted`` because
+        # ``hypothesisCorrect`` is also False on rejected trials
+        # (the worker only sets it to True when accepting with the
+        # correct parity).
+        if accepted and not bool(t.get("hypothesisCorrect", False)):
+            bad_accepts[(strategy, n)] += 1
         mechanisms[(strategy, n, t["outcome"])] += 1
 
     rejection_rate: dict[tuple[str, int], float] = {}
     ci: dict[tuple[str, int], tuple[float, float]] = {}
+    bad_accept_rate: dict[tuple[str, int], float] = {}
+    bad_accept_ci: dict[tuple[str, int], tuple[float, float]] = {}
     for key, total in counts.items():
         rej = rejects.get(key, 0)
         rejection_rate[key] = rej / total if total else 0
         ci[key] = wilson_ci(rej, total)
+        bad = bad_accepts.get(key, 0)
+        bad_accept_rate[key] = bad / total if total else 0
+        bad_accept_ci[key] = wilson_ci(bad, total)
 
     ns = sorted({n for (_, n) in counts})
-    return rejection_rate, ci, mechanisms, ns
+    return rejection_rate, ci, mechanisms, bad_accept_rate, bad_accept_ci, ns
 
 
 # ---------------------------------------------------------------------------
@@ -298,23 +325,42 @@ def plot_rejection_mechanism_by_n(
 def write_summary_table(
     rejection_rate: dict[tuple[str, int], float],
     ci: dict[tuple[str, int], tuple[float, float]],
+    bad_accept_rate: dict[tuple[str, int], float],
+    bad_accept_ci: dict[tuple[str, int], tuple[float, float]],
     ns: list[int],
 ) -> None:
-    """Write CSV summary: per (strategy, n) rejection rate with 95% CI."""
+    """Write CSV summary: per (strategy, n) rejection + bad-accept rate.
+
+    Audit fix m1 (audit/soundness.md): the ``bad_accept_*`` columns
+    capture the operationally-relevant Eq. (18) event
+    ``Pr[accepted AND not hypothesis_correct]``.  This is the
+    quantity the soundness theorem actually bounds; ``rejection_rate``
+    can be misleading for adversaries that occasionally produce
+    correct hypotheses by accident (e.g. ``random_list``).
+    """
     path = OUT_DIR / "soundness_summary.csv"
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["strategy", "n", "rejection_rate", "ci_lower", "ci_upper"])
+        writer.writerow([
+            "strategy", "n",
+            "rejection_rate", "ci_lower", "ci_upper",
+            "bad_accept_rate", "bad_accept_ci_lower", "bad_accept_ci_upper",
+        ])
         for strategy in STRATEGY_ORDER:
             for n in ns:
                 rate = rejection_rate.get((strategy, n), 0)
                 lo, hi = ci.get((strategy, n), (0, 0))
+                bad = bad_accept_rate.get((strategy, n), 0)
+                blo, bhi = bad_accept_ci.get((strategy, n), (0, 0))
                 writer.writerow([
                     STRATEGY_LABELS[strategy],
                     n,
                     f"{rate:.4f}",
                     f"{lo:.4f}",
                     f"{hi:.4f}",
+                    f"{bad:.4f}",
+                    f"{blo:.4f}",
+                    f"{bhi:.4f}",
                 ])
     print(f"  {path.relative_to(PROJECT_ROOT)}")
 
@@ -383,14 +429,23 @@ def main() -> None:
     print(f"  {len(trials)} trials, strategies={params['strategies']}, "
           f"n in {params['nRange'][0]}..{params['nRange'][-1]}")
 
-    rejection_rate, ci, mechanisms, ns = build_tables(trials)
+    rejection_rate, ci, mechanisms, bad_accept_rate, bad_accept_ci, ns = build_tables(trials)
 
     print("\nGenerating artefacts:")
     plot_rejection_by_strategy(rejection_rate, ci, ns)
     plot_rejection_mechanism(mechanisms, ns)
     plot_rejection_mechanism_by_n(mechanisms, ns)
-    write_summary_table(rejection_rate, ci, ns)
+    write_summary_table(rejection_rate, ci, bad_accept_rate, bad_accept_ci, ns)
     write_latex_table(rejection_rate, ci, ns)
+
+    # Print bad-accept summary so the user can see Eq. (18) directly
+    print("\nBad-accept rate per (strategy, n) [Pr[accepted AND wrong hypothesis]]:")
+    print(f"  {'strategy':<15s} {'n':>4s} {'bad_accept':>11s} {'95% CI':>20s}")
+    for strategy in STRATEGY_ORDER:
+        for n in ns:
+            rate = bad_accept_rate.get((strategy, n), 0)
+            lo, hi = bad_accept_ci.get((strategy, n), (0, 0))
+            print(f"  {strategy:<15s} {n:>4d} {rate:>11.4f}    [{lo:.4f}, {hi:.4f}]")
 
     print("\nDone.")
 
