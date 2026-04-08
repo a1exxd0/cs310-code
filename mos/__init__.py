@@ -84,7 +84,7 @@ class MoSState:
     noise_rate : float
         Label-flip noise rate :math:`\eta \in [0, 0.5]`. When :math:`\eta > 0`,
         each label is independently flipped with probability :math:`\eta` before
-        state preparation.  This corresponds to the MoS noisy functional setting,
+        state preparation.  This reduces to the MoS noisy functional setting,
         Definition 5(iii).  The MoS state is constructed from the *effective*
         label probabilities :math:`\phi_{\text{eff}}(x) = (1-2\eta)\phi(x)+\eta`,
         so all quantum operations (state preparation, QFS, classical sampling)
