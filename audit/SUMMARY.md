@@ -10,15 +10,17 @@ This directory contains independent per-experiment audits of every result in `re
 | bent | [bent.md](bent.md) | PASS |
 | truncation | [truncation.md](truncation.md) | PASS impl, MAJOR experiment design |
 | soundness | [soundness.md](soundness.md) | PASS |
-| soundness_multi | [soundness_multi.md](soundness_multi.md) | PASS impl, MAJOR sample-budget |
-| average_case | [average_case.md](average_case.md) | PASS impl, MAJOR wrong dispatch path |
+| soundness_multi | [soundness_multi.md](soundness_multi.md) | **PASS** (post-rerun 2026-04-08) |
+| average_case | [average_case.md](average_case.md) | **PASS** (post-rerun 2026-04-08; Tier 3 follow-up recommended) |
 | k_sparse | [k_sparse.md](k_sparse.md) | PASS impl, MAJOR off-promise |
-| noise_sweep | [noise_sweep.md](noise_sweep.md) | PASS impl, MAJOR sweep range |
+| noise_sweep | [noise_sweep.md](noise_sweep.md) | **PASS** (post-rerun 2026-04-08; MAJOR-2 deferred to Tier 3) |
 | gate_noise | [gate_noise.md](gate_noise.md) | exploratory, MAJOR off-paper |
 | theta_sensitivity | [theta_sensitivity.md](theta_sensitivity.md) | PASS impl, MAJOR fixed budgets |
 | ab_regime | [ab_regime.md](ab_regime.md) | PASS impl, MAJOR figure interpretation |
 
 **No BLOCKER issues in any experiment.** Every audit is "implementation correct, experimental design or framing has issues".
+
+**Post-rerun update (2026-04-08):** the Tier 1/Tier 2 reruns for `average_case`, `soundness_multi`, and `noise_sweep` listed in `audit/FOLLOW_UPS.md` §1-3 have all completed on the DCS cluster and the audit findings they target are resolved. See the "Post-rerun (2026-04-08)" section at the bottom of each per-experiment audit file for the verified outcomes. The Tier 3 / Tier 4 work in `audit/FOLLOW_UPS.md` §4-9 is unchanged and still recommended as follow-on.
 
 ## What is correct (do not touch)
 

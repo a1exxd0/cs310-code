@@ -10,6 +10,16 @@ The applied code changes are described in the per-experiment audit
 files and in the docstrings of the affected modules; this document
 only records what is **left to do** on top of those.
 
+**Status (2026-04-08):** Sections §1, §2, §3 below have been **completed**.
+The three Tier 1/Tier 2 reruns landed on the DCS cluster as SLURM
+arrays `1308003` (`average_case`), `1308020` (`soundness_multi`),
+and `1308033` (`noise_sweep`); the regenerated `.pb` files and the
+refreshed plot artefacts are in `results/`. See the "Post-rerun
+(2026-04-08)" sections at the bottom of `audit/average_case.md`,
+`audit/soundness_multi.md`, and `audit/noise_sweep.md` for
+verified outcomes. Tier 3 / Tier 4 work in §4-9 is unchanged and
+still recommended as follow-on.
+
 ## Reruns required after code changes already applied
 
 These reruns should regenerate `.pb` files at the **same scale** as
@@ -17,7 +27,7 @@ the existing artefacts (typically `n in [4, 16]`, 100 trials per
 cell), then re-run the corresponding `results/figures/<exp>/plot_*.py`
 script to refresh CSVs and PDFs/PNGs.
 
-### 1. `average_case` — highest-priority
+### 1. `average_case` — highest-priority — ✓ DONE (2026-04-08)
 
 **Why:** `experiments/harness/average_case.py` previously left
 `TrialSpec.k = None` for the `k_sparse_*` and `sparse_plus_noise`
@@ -49,7 +59,7 @@ the Fourier-sparse path).
 
 ---
 
-### 2. `soundness_multi`
+### 2. `soundness_multi` — ✓ DONE (2026-04-08)
 
 **Why:** `experiments/harness/soundness_multi.py` previously used
 `classical_samples_verifier=3000`, far below the Hoeffding-derived
@@ -77,7 +87,7 @@ remain near 100%.
 
 ---
 
-### 3. `noise_sweep`
+### 3. `noise_sweep` — ✓ DONE (2026-04-08)
 
 **Why:** `experiments/harness/noise.py` previously stopped at
 `eta = 0.40`, below the theoretical breakdown

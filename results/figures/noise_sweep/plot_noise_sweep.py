@@ -90,8 +90,12 @@ def build_tables(trials: list[dict], epsilon: float) -> dict:
         acceptance_ci[key] = wilson_ci(accepted, total)
         correctness_ci[key] = wilson_ci(correct, total)
 
-        weights = [t["accumulatedWeight"] for t in group]
-        thresholds = [t["acceptanceThreshold"] for t in group]
+        # protobuf JSON encoding omits double fields equal to the default 0.0,
+        # so high-eta trials where the verifier estimate collapses to 0 (and
+        # reject_list_too_large trials that never compute a weight) appear with
+        # the field absent.  Treat missing as the literal 0.0 default.
+        weights = [t.get("accumulatedWeight", 0.0) for t in group]
+        thresholds = [t.get("acceptanceThreshold", 0.0) for t in group]
         median_weight[key] = float(np.median(weights))
         median_threshold[key] = float(np.median(thresholds))
 
