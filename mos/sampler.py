@@ -17,7 +17,7 @@ with probability
       \bigl(1 - \mathbb{E}_{x \sim U_n}[(\tilde\phi_{\text{eff}}(x))^2]\bigr)
     + \bigl(\hat{\tilde\phi}_{\text{eff}}(s)\bigr)^2
 
-This module provides three simulation strategies:
+This module provides two simulation strategies:
 
 - **statevector** (default): For each sampled :math:`f \sim F_D`, constructs
   :math:`|\psi_f\rangle` as a Statevector, applies :math:`H^{\otimes(n+1)}`,
@@ -31,13 +31,7 @@ This module provides three simulation strategies:
   validating circuit construction.  Practical for :math:`n \leq 12` due
   to multi-controlled gate overhead.
 
-- **batched**: Draws :math:`M` functions :math:`f_1, \ldots, f_M \sim F_D`,
-  runs one shot per function, and aggregates.  Equivalent to independently
-  sampling from :math:`\rho_D` then measuring, matching the physical
-  protocol exactly.  Useful for large-scale experiments where controlling
-  the total copy count matters.
-
-All modes return raw measurement counts (before post-selection) so that
+Both modes return raw measurement counts (before post-selection) so that
 the caller can verify the 1/2 label-qubit marginal and inspect rejection
 rates.
 
@@ -89,8 +83,7 @@ class QFSResult:
     n : int
         Number of input qubits.
     mode : str
-        Simulation mode used (``"statevector"``, ``"circuit"``, or
-        ``"batched"``).
+        Simulation mode used (``"statevector"`` or ``"circuit"``).
     """
 
     raw_counts: dict[str, int]
@@ -174,7 +167,7 @@ class QuantumFourierSampler:
     """
 
     # valid mode names
-    _MODES = {"statevector", "circuit", "batched"}
+    _MODES = {"statevector", "circuit"}
 
     def __init__(
         self,
@@ -213,9 +206,6 @@ class QuantumFourierSampler:
 
             - ``"statevector"`` — direct Statevector computation per copy.
             - ``"circuit"`` — Qiskit circuit + ``StatevectorSampler`` per copy.
-            - ``"batched"`` — one shot per copy, aggregated.  Equivalent to
-              ``"statevector"`` but draws exactly one measurement outcome per
-              sampled :math:`f`, matching the physical single-copy protocol.
 
         Returns
         -------
@@ -237,7 +227,6 @@ class QuantumFourierSampler:
         dispatch = {
             "statevector": self._sample_statevector,
             "circuit": self._sample_circuit,
-            "batched": self._sample_batched,
         }
         raw_counts = dispatch[mode](shots)
         ps_counts, ps_shots = self._postselect(raw_counts)
@@ -416,80 +405,6 @@ class QuantumFourierSampler:
             for pub_result in job.result():
                 for bitstring, cnt in pub_result.data.meas.get_counts().items():
                     counts[bitstring] = counts.get(bitstring, 0) + cnt
-
-        return counts
-
-    def _sample_batched(self, shots: int) -> dict[str, int]:
-        r"""
-        Batched mode: draw :math:`M` = *shots* functions at once, build
-        all statevectors, apply Hadamard, sample one shot each.
-
-        Functionally identical to :meth:`_sample_statevector` but uses
-        vectorised NumPy operations for the Hadamard-transformed
-        probability computation, avoiding per-copy Statevector overhead.
-
-        **Implementation.**  For each :math:`f`, the post-Hadamard
-        probabilities are computed directly from the amplitudes:
-
-        .. math::
-
-            \Pr[(s,b)] = \bigl|
-              \langle s,b | H^{\otimes(n+1)} | \psi_f \rangle
-            \bigr|^2
-
-        The :math:`2^{n+1}` probabilities are assembled in a flat array
-        and a single multinomial draw produces the outcome.  This avoids
-        constructing Qiskit ``Statevector`` objects entirely.
-        """
-        n = self.n
-        dim_x = self.state.dim_x
-        dim_total = self.state.dim_total
-        counts: dict[str, int] = {}
-
-        # Precompute the (2^{n+1}) x (2^{n+1}) Hadamard matrix rows
-        # we need.  Actually, we just need H|psi_f>, which is:
-        #   (H^{n+1} |psi_f>)[idx] = (1/sqrt(2^{n+1})) sum_x amp_x * (-1)^{idx . (x,f(x))}
-        # where amp_x = 1/sqrt(2^n) for all x.
-        #
-        # So the amplitude at index (s,b) = s + b*2^n is:
-        #   (1/2^n) sum_x (-1)^{s.x + b*f(x)}
-        #
-        # Probabilities:
-        #   Pr[(s,b)] = (1/4^n) |sum_x (-1)^{s.x + b*f(x)}|^2
-
-        # Precompute parity matrix: parities[s, x] = (-1)^{s.x}
-        xs = np.arange(dim_x)
-        ss = np.arange(dim_x)
-        # bit_and[s,x] = popcount(s & x) mod 2
-        bit_and = np.array(
-            [[bin(s & x).count("1") % 2 for x in xs] for s in ss],
-            dtype=np.float64,
-        )
-        chi_matrix = 1.0 - 2.0 * bit_and  # chi_matrix[s, x] = (-1)^{s.x}
-
-        for _ in range(shots):
-            f = self.state.sample_f(rng=self._rng)
-            g_f = 1.0 - 2.0 * f.astype(np.float64)  # g_f[x] = (-1)^{f(x)}
-
-            # Amplitude at (s, b=0): (1/2^n) sum_x chi_s(x) * 1
-            amp_b0 = chi_matrix @ np.ones(dim_x) / dim_x  # shape (2^n,)
-            # Amplitude at (s, b=1): (1/2^n) sum_x chi_s(x) * (-1)^{f(x)}
-            amp_b1 = chi_matrix @ g_f / dim_x  # shape (2^n,)
-
-            probs = np.empty(dim_total, dtype=np.float64)
-            probs[:dim_x] = amp_b0**2  # indices 0..2^n-1 correspond to b=0
-            probs[dim_x:] = amp_b1**2  # indices 2^n..2^{n+1}-1 correspond to b=1
-
-            # Normalise to handle floating-point drift
-            probs /= probs.sum()
-
-            # Draw one outcome
-            idx = self._rng.choice(dim_total, p=probs)
-
-            # Convert index to (n+1)-bit string (Qiskit little-endian)
-            bitstring = format(idx, f"0{n + 1}b")
-
-            counts[bitstring] = counts.get(bitstring, 0) + 1
 
         return counts
 

@@ -275,8 +275,7 @@ class MoSProver:
             (computational-basis measurement of :math:`\rho_D`).
             This is needed for the verifier's Fourier weight check.
         qfs_mode : str
-            QFS simulation mode (``"statevector"``, ``"circuit"``,
-            or ``"batched"``).
+            QFS simulation mode (``"statevector"`` or ``"circuit"``).
         qfs_shots : int, optional
             Override the number of QFS shots.  If not provided,
             computed from the DKW bound (Lemma 3):

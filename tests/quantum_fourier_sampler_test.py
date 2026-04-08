@@ -9,7 +9,7 @@ Tests are organised into five categories:
    regardless of phi.
 3. **Empirical convergence** — Sampled distributions converge to the
    Theorem 5 prediction as shots increase (DKW / Corollary 5).
-4. **Mode consistency** — Statevector, circuit, and batched modes agree.
+4. **Mode consistency** — Statevector and circuit modes agree.
 5. **Edge cases and validation** — Degenerate phi, input errors, container
    properties.
 
@@ -276,14 +276,6 @@ class TestPostselectionRate:
             f"{name}: ps_rate={result.postselection_rate:.3f}"
         )
 
-    def test_rate_batched_mode(self):
-        """Batched mode should also give ps_rate ~ 0.5."""
-        phi = np.array([0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6])
-        state = MoSState(n=3, phi=phi, seed=77)
-        qfs = QuantumFourierSampler(state, seed=77)
-        result = qfs.sample(shots=self.SHOTS, mode="batched")
-        assert abs(result.postselection_rate - 0.5) < self.TOL
-
 
 # =====================================================================
 # 3. Empirical convergence to Theorem 5
@@ -323,12 +315,6 @@ class TestEmpiricalConvergence:
         phi = _make_distributional_phi(3, {1: 0.6, 3: 0.2})
         state = MoSState(n=3, phi=phi, seed=20)
         self._run_convergence(state, "statevector", shots=10000, atol=0.03)
-
-    def test_distributional_batched_convergence(self):
-        """Same distributional phi, batched mode."""
-        phi = _make_distributional_phi(3, {1: 0.6, 3: 0.2})
-        state = MoSState(n=3, phi=phi, seed=30)
-        self._run_convergence(state, "batched", shots=10000, atol=0.03)
 
     def test_noisy_convergence(self):
         """Noisy parity at eta=0.15."""
@@ -390,7 +376,7 @@ class TestEmpiricalConvergence:
 
 class TestModeConsistency:
     """
-    All three simulation modes implement the same physical protocol.
+    Both simulation modes implement the same physical protocol.
     Their empirical distributions should agree (up to sampling noise).
     """
 
@@ -400,7 +386,7 @@ class TestModeConsistency:
         state = MoSState(n=2, phi=phi, seed=100)
 
         distributions = {}
-        for mode in ["statevector", "circuit", "batched"]:
+        for mode in ["statevector", "circuit"]:
             qfs = QuantumFourierSampler(state, seed=100)
             result = qfs.sample(shots=1000, mode=mode)
             distributions[mode] = result.empirical_distribution()
@@ -408,24 +394,6 @@ class TestModeConsistency:
         for mode, emp in distributions.items():
             assert np.argmax(emp) == 1, f"{mode}: peak not at s=1"
             assert emp[1] > 0.99, f"{mode}: Pr[s=1] = {emp[1]}"
-
-    def test_distributional_sv_vs_batched(self):
-        """
-        Statevector and batched modes for distributional phi.
-
-        Both use the internal RNG for measurement, so with independent
-        seeds they should still converge to the same theoretical dist.
-        """
-        phi = _make_distributional_phi(3, {1: 0.5, 4: 0.3})
-        state = MoSState(n=3, phi=phi, seed=200)
-        theory = QuantumFourierSampler(state).theoretical_distribution()
-
-        for mode in ["statevector", "batched"]:
-            qfs = QuantumFourierSampler(state, seed=hash(mode) % 2**31)
-            result = qfs.sample(shots=8000, mode=mode)
-            emp = result.empirical_distribution()
-            err = _l_inf(emp, theory)
-            assert err < 0.04, f"{mode}: L-inf={err:.4f}"
 
     def test_circuit_vs_statevector_noisy(self):
         """
@@ -461,7 +429,7 @@ class TestModeConsistency:
         phi = _make_distributional_phi(n, {2: 0.4})
         state = MoSState(n=n, phi=phi, seed=400)
 
-        for mode in ["statevector", "batched"]:
+        for mode in ["statevector", "circuit"]:
             qfs = QuantumFourierSampler(state, seed=400)
             result = qfs.sample(shots=200, mode=mode)
 
@@ -675,16 +643,6 @@ class TestReproducibility:
         state2 = MoSState(n=3, phi=phi, seed=800)
         qfs2 = QuantumFourierSampler(state2, seed=42)
         r2 = qfs2.sample(shots=500, mode="statevector")
-
-        assert r1.raw_counts == r2.raw_counts
-
-    def test_batched_deterministic(self):
-        phi = _make_distributional_phi(3, {1: 0.4, 5: 0.3})
-        state1 = MoSState(n=3, phi=phi, seed=810)
-        state2 = MoSState(n=3, phi=phi, seed=810)
-
-        r1 = QuantumFourierSampler(state1, seed=99).sample(500, "batched")
-        r2 = QuantumFourierSampler(state2, seed=99).sample(500, "batched")
 
         assert r1.raw_counts == r2.raw_counts
 
