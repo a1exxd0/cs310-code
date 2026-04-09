@@ -45,7 +45,6 @@ _RESULT_TYPES = {
 _PREFIX_MAP = {
     "scaling": "scaling",
     "bent": "bent_function",
-    "truncation": "verifier_truncation",
     "noise_sweep": "noise_sweep",
     "soundness_multi": "soundness_multi",
     "soundness": "soundness",

@@ -22,7 +22,7 @@ uv run pytest -n auto
 # Run experiments
 Use `--workers` to parallelise with the computer's core count:
 ```sh
-uv run python -m experiments.harness {scaling,bent,truncation,noise,soundness,soundness_multi,average_case,gate_noise,k_sparse,theta_sensitivity,ab_regime,all} --workers $(nproc 2>/dev/null || sysctl -n hw.ncpu)
+uv run python -m experiments.harness {scaling,bent,noise,soundness,soundness_multi,average_case,gate_noise,k_sparse,theta_sensitivity,ab_regime,all} --workers $(nproc 2>/dev/null || sysctl -n hw.ncpu)
 ```
 
 # Run experiments on the DCS cluster (SLURM)
@@ -93,7 +93,7 @@ The most important applied fixes:
 | `average_case` | `TrialSpec.k` is now plumbed for `k_sparse_*` and `sparse_plus_noise`; `random_boolean` dropped | NO — needs rerun |
 | `soundness_multi` | `classical_samples_verifier` default 3000 → 30000; `_strategy_diluted_list` formula fixed | NO — needs rerun |
 | `noise_sweep` | η range extended to cross theoretical breakdown; θ held fixed | NO — needs rerun |
-| `scaling`, `theta_sensitivity`, `truncation`, `k_sparse`, `bent`, `ab_regime`, `gate_noise`, `soundness` | docstring + plot caption / interpretation fixes only | yes |
+| `scaling`, `theta_sensitivity`, `k_sparse`, `bent`, `ab_regime`, `gate_noise`, `soundness` | docstring + plot caption / interpretation fixes only | yes |
 
 The follow-up reruns are listed in `audit/FOLLOW_UPS.md` with
 exact submission commands.

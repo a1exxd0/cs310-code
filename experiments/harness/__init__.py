@@ -5,7 +5,7 @@ Runs instrumented experiments that produce the data needed for
 dissertation figures and analysis, with optional process-level
 parallelism via :class:`~concurrent.futures.ProcessPoolExecutor`.
 
-Covers seven experimental directions from Caro et al. [ITCS2024]_:
+Covers ten experimental directions from Caro et al. [ITCS2024]_:
 
 1. **Scaling** (:math:`n = 4 \to 16{+}`):
    Sweep :math:`n` with Goldreich--Levin extraction, recording copy
@@ -17,38 +17,44 @@ Covers seven experimental directions from Caro et al. [ITCS2024]_:
    (:math:`|\hat{\tilde\phi}(s)| = 2^{-n/2}` for all :math:`s`),
    the hardest case for heavy coefficient extraction (Corollary 5).
 
-3. **Verifier truncation tradeoffs**:
-   Vary the verifier's classical sample budget :math:`m_V` and accuracy
-   parameter :math:`\varepsilon` to map the completeness/soundness
-   tradeoff surface (Theorems 8, 12).  Uses a fixed :math:`n` (via
-   ``--n``) because the sweep is already 2-D; adding an :math:`n` axis
-   would produce a prohibitively large 3-D trial grid.
-
-4. **Noise sweep** (:math:`n \times \eta`):
+3. **Noise sweep** (:math:`n \times \eta`):
    Random :math:`\varphi` functions drawn from the noisy parity ensemble
    at varying label-flip rate :math:`\eta`, testing the effective
    coefficient regime :math:`\hat{\tilde\phi}_{\mathrm{eff}}(s) =
    (1-2\eta)\,\hat{\tilde\phi}(s)` (Definition 5(iii), §6.2).  Sweeps
    both :math:`n` and :math:`\eta`, producing a 2-D grid.
 
-5. **Soundness verification** (:math:`n \times \text{strategy}`):
+4. **Soundness verification** (:math:`n \times \text{strategy}`):
    Inject dishonest provers with adversarial strategies and measure
    empirical rejection rates against the information-theoretic soundness
    guarantee (Definition 7).  Sweeps :math:`n` against four fixed
    adversarial strategies.
 
+5. **Multi-element soundness** (:math:`n \times \text{strategy}`):
+   Extend soundness testing to dishonest provers that submit multi-element
+   Fourier-sparse hypotheses.
+
 6. **Average-case performance** (:math:`n \times \text{family}`):
    Test the protocol on diverse function families beyond single parities:
-   :math:`k`-Fourier-sparse (Dirichlet coefficients), random Boolean
-   (uniform truth tables), and sparse-plus-noise (dominant parity with
-   secondary coefficients).  Probes the regime of Corollary 7
-   (2-agnostic Fourier-sparse learning).
+   :math:`k`-Fourier-sparse (Dirichlet coefficients) and
+   sparse-plus-noise (dominant parity with secondary coefficients).
+   Probes the regime of Corollary 7 (2-agnostic Fourier-sparse learning).
 
 7. **Gate-level noise** (:math:`n \times p`):
    Apply depolarising noise channels to H, X, and CX gates in the QFS
    circuit, sweeping the error rate :math:`p`.  Goes beyond the
    label-flip noise model of Definition 5(iii); results are inherently
    empirical with no theoretical prediction.
+
+8. **k-sparse** (:math:`n \times k`):
+   Sweep sparsity parameter :math:`k` for Fourier-sparse functions.
+
+9. **Theta sensitivity** (:math:`n \times \theta`):
+   Sweep the acceptance threshold :math:`\theta` to map its effect on
+   completeness and soundness.
+
+10. **a/b regime** (:math:`n \times a \times b`):
+    Sweep the :math:`(a, b)` sample-budget parameters of the protocol.
 
 All experiments write results to Protocol Buffer binary files with
 per-experiment schemas (see ``experiments/proto/``).
@@ -64,9 +70,9 @@ Run all experiments::
     python -m experiments.harness all --n-min 4 --n-max 12 --workers 4
 
 ``--n-min`` / ``--n-max`` control the :math:`n` range for all
-experiments.  ``--n`` overrides the fixed dimension used by the
-truncation experiment (which sweeps other axes instead of :math:`n`);
-it defaults to ``--n-min`` when omitted.
+experiments.  ``--n`` overrides the fixed dimension for experiments
+that sweep other axes instead of :math:`n`; it defaults to
+``--n-min`` when omitted.
 
 Programmatic use::
 
@@ -126,5 +132,4 @@ __all__ = [
     "run_soundness_experiment",
     "run_soundness_multi_experiment",
     "run_trials_parallel",
-    "run_truncation_experiment",
 ]
