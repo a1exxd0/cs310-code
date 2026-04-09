@@ -14,14 +14,6 @@ def run_soundness_multi_experiment(
     k_range: list[int] | None = None,
     num_trials: int = 50,
     epsilon: float = 0.3,
-    # Audit fix M1 (audit/soundness_multi.md): bumped from 3000 -> 30000
-    # to bring the verifier closer to the Hoeffding-derived budget for
-    # the k-sparse path.  ``classical_samples_verifier=3000`` previously
-    # produced ~18% false-acceptance for ``subset_plus_noise`` at k=2,
-    # exceeding the stated delta=0.1.  Existing tests override this
-    # default explicitly, so they remain unaffected.  The on-disk
-    # results/soundness_multi_4_16_100.pb was generated with the old
-    # value and is tracked in audit/FOLLOW_UPS.md as needing a rerun.
     classical_samples_verifier: int = 30000,
     base_seed: int = 42,
     max_workers: int = 1,
@@ -69,25 +61,6 @@ def run_soundness_multi_experiment(
         marginal case where one real coefficient's weight alone
         is insufficient.
 
-    .. note::
-
-       **Sample budget bumped from 3000 -> 30000 (audit fix M1).**
-       The previous default ``classical_samples_verifier=3000`` was
-       three to four orders of magnitude below the Hoeffding-derived
-       budget required for the k-sparse path's tolerance
-       :math:`\varepsilon^2/(256 k^2 |L|)`.  At :math:`k = 2` the
-       ``subset_plus_noise`` strategy was falsely accepting at up
-       to 18 %, exceeding the stated :math:`\delta = 0.1`.  Bumping
-       to 30 000 brings the verifier closer to the analytic budget;
-       the existing
-       ``results/soundness_multi_4_16_100.pb`` was generated with
-       the old value and is invalid until re-run.  See
-       ``audit/soundness_multi.md`` and ``audit/FOLLOW_UPS.md``.
-
-       :math:`\vartheta = \min(\varepsilon,\, 0.9/k)` is an
-       undocumented heuristic (m1 in the audit); the paper requires
-       :math:`\vartheta \in (2^{-(n/2 - 3)},\, 1)`.
-
     Parameters
     ----------
     n_range : range
@@ -112,7 +85,12 @@ def run_soundness_multi_experiment(
     if k_range is None:
         k_range = [2, 4]
 
-    strategies = ["partial_real", "diluted_list", "shifted_coefficients", "subset_plus_noise"]
+    strategies = [
+        "partial_real",
+        "diluted_list",
+        "shifted_coefficients",
+        "subset_plus_noise",
+    ]
 
     print(
         f"=== Soundness Multi-Element Experiment: n in {list(n_range)}, "
@@ -154,8 +132,11 @@ def run_soundness_multi_experiment(
 
     t0 = time.time()
     trials = run_trials_parallel(
-        specs, max_workers=max_workers, label="sound_multi",
-        shard_index=shard_index, num_shards=num_shards,
+        specs,
+        max_workers=max_workers,
+        label="sound_multi",
+        shard_index=shard_index,
+        num_shards=num_shards,
     )
     wall = time.time() - t0
 

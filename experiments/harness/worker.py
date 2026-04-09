@@ -201,7 +201,9 @@ def _run_trial_worker(spec: TrialSpec) -> TrialResult:
             hyp_s = max(hyp_coefficients, key=lambda s: abs(hyp_coefficients[s]))
             correct = hyp_s == spec.target_s
             misclass_rate = _compute_misclassification_rate(
-                state, result.hypothesis, spec.seed + 2_000_000,
+                state,
+                result.hypothesis,
+                spec.seed + 2_000_000,
                 num_samples=spec.misclassification_samples or 1000,
             )
         else:
@@ -239,43 +241,63 @@ def _run_trial_worker(spec: TrialSpec) -> TrialResult:
     )
 
 
-def _extract_spectrum(phi: list[float], threshold: float = 0.01) -> list[tuple[int, float]]:
+def _extract_spectrum(
+    phi: list[float], threshold: float = 0.01
+) -> list[tuple[int, float]]:
     """Compute Fourier spectrum of phi and return (index, coefficient) pairs above threshold."""
     from experiments.harness.phi import walsh_hadamard
+
     phi_arr = np.array(phi)
     tilde_phi = 1.0 - 2.0 * phi_arr
     spectrum = walsh_hadamard(tilde_phi)
-    return [(s, float(spectrum[s])) for s in range(len(spectrum)) if abs(spectrum[s]) > threshold]
+    return [
+        (s, float(spectrum[s]))
+        for s in range(len(spectrum))
+        if abs(spectrum[s]) > threshold
+    ]
 
 
 def _strategy_random_list(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     L = sorted(rng.choice(2**n, size=min(5, 2**n), replace=False).tolist())
-    return ProverMessage(L, {s: 0.0 for s in L}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0)
+    return ProverMessage(
+        L, {s: 0.0 for s in L}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0
+    )
 
 
 def _strategy_wrong_parity(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     wrong_s = (target_s + 1) % (2**n)
     if wrong_s == 0:
         wrong_s = (target_s + 2) % (2**n)
-    return ProverMessage([wrong_s], {wrong_s: 1.0}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0)
+    return ProverMessage(
+        [wrong_s], {wrong_s: 1.0}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0
+    )
 
 
 def _strategy_partial_list(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     return ProverMessage([], {}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0)
 
 
 def _strategy_inflated_list(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     candidates = [s for s in range(2**n) if s != target_s]
-    chosen = sorted(rng.choice(candidates, size=min(10, len(candidates)), replace=False).tolist())
-    return ProverMessage(chosen, {s: 0.5 for s in chosen}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0)
+    chosen = sorted(
+        rng.choice(candidates, size=min(10, len(candidates)), replace=False).tolist()
+    )
+    return ProverMessage(
+        chosen, {s: 0.5 for s in chosen}, n, epsilon, epsilon, dummy_sa, dummy_qfs, 0
+    )
 
 
 def _strategy_partial_real(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     heavy = _extract_spectrum(phi)
     heavy_sorted = sorted(heavy, key=lambda x: abs(x[1]), reverse=True)
     n_real = max(1, len(heavy_sorted) // 2)
@@ -283,55 +305,75 @@ def _strategy_partial_real(n, rng, target_s, epsilon, theta, phi, dummy_sa, dumm
     used = {s for s, _ in heavy}
     fake_candidates = [s for s in range(2**n) if s not in used]
     n_fake = min(3, len(fake_candidates))
-    fakes = sorted(rng.choice(fake_candidates, size=n_fake, replace=False).tolist()) if n_fake > 0 else []
+    fakes = (
+        sorted(rng.choice(fake_candidates, size=n_fake, replace=False).tolist())
+        if n_fake > 0
+        else []
+    )
     L = sorted(real_part + fakes)
-    return ProverMessage(L, {s: 0.5 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0)
+    return ProverMessage(
+        L, {s: 0.5 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0
+    )
 
 
 def _strategy_diluted_list(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
     from ql.prover import ProverMessage
+
     heavy = _extract_spectrum(phi)
     heavy_sorted = sorted(heavy, key=lambda x: abs(x[1]), reverse=True)
-    # Audit fix m4 (audit/soundness_multi.md): the previous formula
-    # ``n_keep = max(1, len(heavy_sorted) // 4)`` was always 1 for
-    # k <= 4, so the strategy was effectively "keep one weakest" — its
-    # docstring described "keep all real" which the code never did.
-    # We now keep ``max(1, k // 2)`` of the weakest real coefficients,
-    # which matches the "diluted signal" intuition (the prover knows
-    # part of the spectrum but not all of it).  The verifier still
-    # rejects because accumulated weight on the kept subset is
-    # strictly below the true Parseval mass ``pw``.
     n_keep = max(1, len(heavy_sorted) // 2)
     kept_indices = [s for s, _ in heavy_sorted[-n_keep:]]
     used = {s for s, _ in heavy}
     padding_candidates = [s for s in range(2**n) if s not in used]
     n_padding = min(20, len(padding_candidates))
-    padding = sorted(rng.choice(padding_candidates, size=n_padding, replace=False).tolist()) if n_padding > 0 else []
+    padding = (
+        sorted(rng.choice(padding_candidates, size=n_padding, replace=False).tolist())
+        if n_padding > 0
+        else []
+    )
     L = sorted(kept_indices + padding)
-    return ProverMessage(L, {s: 0.5 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0)
+    return ProverMessage(
+        L, {s: 0.5 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0
+    )
 
 
-def _strategy_shifted_coefficients(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
+def _strategy_shifted_coefficients(
+    n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs
+):
     from ql.prover import ProverMessage
+
     heavy = _extract_spectrum(phi)
     used = {s for s, _ in heavy}
     wrong_candidates = [s for s in range(2**n) if s not in used]
     n_wrong = min(len(heavy), len(wrong_candidates))
-    chosen = sorted(rng.choice(wrong_candidates, size=max(1, n_wrong), replace=False).tolist())
-    return ProverMessage(chosen, {s: 0.8 for s in chosen}, n, epsilon, theta, dummy_sa, dummy_qfs, 0)
+    chosen = sorted(
+        rng.choice(wrong_candidates, size=max(1, n_wrong), replace=False).tolist()
+    )
+    return ProverMessage(
+        chosen, {s: 0.8 for s in chosen}, n, epsilon, theta, dummy_sa, dummy_qfs, 0
+    )
 
 
-def _strategy_subset_plus_noise(n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs):
+def _strategy_subset_plus_noise(
+    n, rng, target_s, epsilon, theta, phi, dummy_sa, dummy_qfs
+):
     from ql.prover import ProverMessage
+
     heavy = _extract_spectrum(phi)
     heavy_sorted = sorted(heavy, key=lambda x: abs(x[1]), reverse=True)
     heaviest_s = heavy_sorted[0][0] if heavy_sorted else 0
     used = {s for s, _ in heavy}
     fake_candidates = [s for s in range(2**n) if s not in used]
     n_fake = min(5, len(fake_candidates))
-    fakes = sorted(rng.choice(fake_candidates, size=n_fake, replace=False).tolist()) if n_fake > 0 else []
+    fakes = (
+        sorted(rng.choice(fake_candidates, size=n_fake, replace=False).tolist())
+        if n_fake > 0
+        else []
+    )
     L = sorted([heaviest_s] + fakes)
-    return ProverMessage(L, {s: 0.3 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0)
+    return ProverMessage(
+        L, {s: 0.3 for s in L}, n, epsilon, theta, dummy_sa, dummy_qfs, 0
+    )
 
 
 _DISHONEST_STRATEGIES = {
@@ -387,7 +429,9 @@ def _run_dishonest_trial(spec: TrialSpec, state) -> TrialResult:
     if strategy_fn is None:
         raise ValueError(f"Unknown dishonest strategy: {spec.dishonest_strategy}")
 
-    fake_msg = strategy_fn(n, rng, target_s, epsilon, spec.theta, spec.phi, dummy_sa, dummy_qfs)
+    fake_msg = strategy_fn(
+        n, rng, target_s, epsilon, spec.theta, spec.phi, dummy_sa, dummy_qfs
+    )
 
     verifier = MoSVerifier(state, seed=spec.seed + 1_000_000)
 
@@ -423,13 +467,17 @@ def _run_dishonest_trial(spec: TrialSpec, state) -> TrialResult:
             hyp_coefficients = dict(vresult.hypothesis.coefficients)
             hyp_s = max(hyp_coefficients, key=lambda s: abs(hyp_coefficients[s]))
             misclass_rate = _compute_misclassification_rate(
-                state, vresult.hypothesis, spec.seed + 2_000_000,
+                state,
+                vresult.hypothesis,
+                spec.seed + 2_000_000,
                 num_samples=spec.misclassification_samples or 1000,
             )
         else:
             hyp_s = vresult.hypothesis.s
             misclass_rate = _compute_misclassification_rate(
-                state, vresult.hypothesis, spec.seed + 2_000_000,
+                state,
+                vresult.hypothesis,
+                spec.seed + 2_000_000,
                 num_samples=spec.misclassification_samples or 1000,
             )
 
@@ -516,7 +564,11 @@ def run_trials_parallel(
 
         full_count = len(specs)
         specs = shard_specs(specs, shard_index, num_shards)
-        label = f"{label} shard {shard_index + 1}/{num_shards}" if label else f"shard {shard_index + 1}/{num_shards}"
+        label = (
+            f"{label} shard {shard_index + 1}/{num_shards}"
+            if label
+            else f"shard {shard_index + 1}/{num_shards}"
+        )
         print(
             f"  Shard {shard_index + 1}/{num_shards}: {len(specs)} of {full_count} specs",
             flush=True,

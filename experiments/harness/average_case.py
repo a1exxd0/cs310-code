@@ -13,11 +13,7 @@ from experiments.harness.phi import (
 from experiments.harness.results import ExperimentResult
 from experiments.harness.worker import TrialSpec, run_trials_parallel
 
-# ``random_boolean`` was removed after audit/average_case.md M2: a uniform
-# random truth table at :math:`n \ge 6` violates Definition 11 by
-# construction (every Fourier coefficient has magnitude
-# :math:`\sim 2^{-n/2} < \vartheta`), so the verifier *correctly* rejects
-# it.  Including it as an "average case" representative was misleading.
+
 _DEFAULT_FAMILIES = ["k_sparse_2", "k_sparse_4", "sparse_plus_noise"]
 
 
@@ -40,18 +36,10 @@ def _generate_trial(
     seed = int(rng.integers(0, 2**31))
     trial_rng = default_rng(seed)
 
-    # ``k`` is now plumbed into ``TrialSpec`` so the worker dispatches
-    # k-sparse families to ``verify_fourier_sparse`` (Theorems 9/10/15)
-    # rather than ``verify_parity`` (Theorem 12).  See
-    # ``audit/average_case.md`` (M1).
     if family.startswith("k_sparse_"):
         k = int(family.split("_")[-1])
         phi, target_s, pw = make_k_sparse(n, k, trial_rng)
         max_coeff = 1.0 / k  # expected order; actual varies per draw
-        # Use the Dirichlet draw's actual max via pw is imprecise;
-        # the safe bound is that the heaviest coeff >= 1/k in
-        # expectation. Adapt theta to stay below the expected
-        # heaviest coefficient so GL can detect it.
         theta = min(epsilon, max(0.01, max_coeff * 0.9))
         a_sq = b_sq = pw
         spec_k = k
@@ -126,28 +114,6 @@ def run_average_case_experiment(
         ``TrialSpec.k = 4`` so the verifier runs the Fourier-sparse
         path matching the actual sparsity of the target.
 
-    .. note::
-
-       **History.** Prior to the audit fix in
-       ``audit/average_case.md`` (M1), all three families dispatched
-       to ``verify_parity`` because ``TrialSpec.k`` was never set.
-       The audit identified this as the highest-value single fix; as
-       a result the previous on-disk
-       ``results/average_case_4_16_100.pb`` was generated against the
-       wrong verifier path and is invalid until re-generated.  See
-       ``audit/FOLLOW_UPS.md``.
-
-       The fourth family ``random_boolean`` (uniform truth tables)
-       was dropped: at :math:`n \ge 6` it violates Definition 11 by
-       construction, so the verifier *correctly* rejects it (M2 in
-       the audit).  Including it as an "average case" representative
-       conflated promise-class violation with average-case behaviour.
-
-       :math:`\vartheta = \min(\varepsilon,\, 0.9/k)` is a heuristic
-       (m4 in the audit), not derived from a theorem; for Dirichlet
-       draws a non-trivial fraction of trials will still have
-       :math:`c_{\min} < \vartheta`.
-
     Parameters
     ----------
     n_range : range
@@ -193,16 +159,24 @@ def run_average_case_experiment(
             for _ in range(num_trials):
                 specs.append(
                     _generate_trial(
-                        n, family, epsilon, delta,
-                        qfs_shots, classical_samples_prover,
-                        classical_samples_verifier, rng,
+                        n,
+                        family,
+                        epsilon,
+                        delta,
+                        qfs_shots,
+                        classical_samples_prover,
+                        classical_samples_verifier,
+                        rng,
                     )
                 )
 
     t0 = time.time()
     trials = run_trials_parallel(
-        specs, max_workers=max_workers, label="avg_case",
-        shard_index=shard_index, num_shards=num_shards,
+        specs,
+        max_workers=max_workers,
+        label="avg_case",
+        shard_index=shard_index,
+        num_shards=num_shards,
     )
     wall = time.time() - t0
 
