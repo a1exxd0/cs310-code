@@ -17,7 +17,6 @@ from experiments.proto import (
     average_case_pb2,
     scaling_pb2,
     bent_pb2,
-    truncation_pb2,
     noise_sweep_pb2,
     soundness_pb2,
     soundness_multi_pb2,
@@ -31,7 +30,6 @@ from experiments.proto import (
 _RESULT_TYPES = {
     "scaling": scaling_pb2.ScalingExperimentResult,
     "bent_function": bent_pb2.BentExperimentResult,
-    "verifier_truncation": truncation_pb2.TruncationExperimentResult,
     "noise_sweep": noise_sweep_pb2.NoiseSweepExperimentResult,
     "soundness": soundness_pb2.SoundnessExperimentResult,
     "soundness_multi": soundness_multi_pb2.SoundnessMultiExperimentResult,
@@ -84,19 +82,24 @@ def main():
     parser = argparse.ArgumentParser(
         description="Decode experiment .pb files to JSON",
     )
-    parser.add_argument("files", nargs="+", type=Path, help="Protobuf file(s) to decode")
     parser.add_argument(
-        "-o", "--output",
+        "files", nargs="+", type=Path, help="Protobuf file(s) to decode"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
         type=Path,
         default=None,
         help="Output JSON path (only valid with a single input file; "
-             "omit to print to stdout)",
+        "omit to print to stdout)",
     )
     args = parser.parse_args()
 
     if args.output and len(args.files) > 1:
-        print("Error: -o/--output can only be used with a single input file",
-              file=sys.stderr)
+        print(
+            "Error: -o/--output can only be used with a single input file",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     for pb_path in args.files:

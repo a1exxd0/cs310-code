@@ -42,24 +42,6 @@ def run_bent_experiment(
     :math:`(1 - \mathbb{E}[\tilde\phi^2]) / 2^n` when all coefficients
     are equally small.
 
-    .. note::
-
-       **Caveat on the n=4 case (Corollary 5 uncertain band).**
-       Corollary 5 guarantees inclusion only when
-       :math:`|\hat g(s)| \ge \vartheta`, while requiring returned
-       coefficients to satisfy :math:`|\hat g(s)| \ge \vartheta/2`.  The
-       interval :math:`[\vartheta/2,\, \vartheta)` is therefore an
-       *uncertain band* in which inclusion is permitted but not required.
-       For the default :math:`\vartheta = 0.3`, the bent point at
-       :math:`n = 4` has every coefficient at
-       :math:`2^{-n/2} = 0.25 \in [0.15, 0.3)`, so it lies inside this
-       uncertain band rather than strictly "below the crossover" at
-       :math:`2^{-n/2} = \vartheta/2`.  The :math:`n = 4` acceptance is
-       therefore Corollary 5 extracting from the uncertain band where
-       inclusion is allowed; the prover's Parseval cap
-       :math:`16/\vartheta^2` does the heavy lifting.  See
-       ``audit/bent.md`` (m2).
-
     Parameters
     ----------
     n_range : range
@@ -116,8 +98,11 @@ def run_bent_experiment(
 
     t0 = time.time()
     trials = run_trials_parallel(
-        specs, max_workers=max_workers, label="bent",
-        shard_index=shard_index, num_shards=num_shards,
+        specs,
+        max_workers=max_workers,
+        label="bent",
+        shard_index=shard_index,
+        num_shards=num_shards,
     )
     wall = time.time() - t0
 

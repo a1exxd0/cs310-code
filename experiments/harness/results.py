@@ -10,7 +10,6 @@ from experiments.proto import (
     common_pb2,
     scaling_pb2,
     bent_pb2,
-    truncation_pb2,
     noise_sweep_pb2,
     soundness_pb2,
     average_case_pb2,
@@ -299,9 +298,7 @@ class ExperimentResult:
                 trials=trial_pbs,
             )
         else:
-            raise ValueError(
-                f"No proto schema for experiment: {self.experiment_name}"
-            )
+            raise ValueError(f"No proto schema for experiment: {self.experiment_name}")
 
     def summary_table(self) -> str:
         r"""Produce a human-readable summary table grouped by :math:`n`.

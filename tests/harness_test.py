@@ -33,7 +33,6 @@ from experiments.harness.worker import (
 )
 from experiments.harness.scaling import run_scaling_experiment
 from experiments.harness.bent import run_bent_experiment
-from experiments.harness.truncation import run_truncation_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
 from experiments.harness.soundness import run_soundness_experiment
 from experiments.harness.soundness_multi import run_soundness_multi_experiment
@@ -308,30 +307,6 @@ class TestExperimentResult:
         pb.ParseFromString(data)
         assert pb.metadata.experiment_name == "bent_function"
 
-    def test_save_truncation(self, sample_trial_result, tmp_path):
-        from experiments.proto import truncation_pb2
-
-        result = self._make_experiment(
-            "verifier_truncation",
-            [sample_trial_result],
-            {
-                "n": 4,
-                "noise_rate": 0.15,
-                "a_sq": 0.49,
-                "epsilon_range": [0.3],
-                "verifier_sample_range": [200],
-                "num_trials": 1,
-                "qfs_shots": 100,
-            },
-        )
-        path = str(tmp_path / "test.pb")
-        result.save(path)
-
-        data = Path(path).read_bytes()
-        pb = truncation_pb2.TruncationExperimentResult()
-        pb.ParseFromString(data)
-        assert pb.parameters.n == 4
-
     def test_save_noise_sweep(self, sample_trial_result, tmp_path):
         from experiments.proto import noise_sweep_pb2
 
@@ -567,10 +542,20 @@ class TestWorkerKSparseRouting:
         """k=None trial produces result with k=None and no k-sparse fields."""
         phi = make_single_parity(4, target_s=3)
         spec = TrialSpec(
-            n=4, phi=phi, noise_rate=0.0, target_s=3, epsilon=0.3,
-            delta=0.1, theta=0.3, a_sq=1.0, b_sq=1.0, qfs_shots=500,
-            classical_samples_prover=300, classical_samples_verifier=500,
-            seed=42, phi_description="test_parity",
+            n=4,
+            phi=phi,
+            noise_rate=0.0,
+            target_s=3,
+            epsilon=0.3,
+            delta=0.1,
+            theta=0.3,
+            a_sq=1.0,
+            b_sq=1.0,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            seed=42,
+            phi_description="test_parity",
         )
         result = _run_trial_worker(spec)
         assert result.k is None
@@ -582,11 +567,21 @@ class TestWorkerKSparseRouting:
         rng = default_rng(99)
         phi, target_s, pw = make_k_sparse(4, 2, rng)
         spec = TrialSpec(
-            n=4, phi=phi, noise_rate=0.0, target_s=target_s,
-            epsilon=0.3, delta=0.1, theta=0.15, a_sq=pw, b_sq=pw,
-            qfs_shots=2000, classical_samples_prover=1000,
-            classical_samples_verifier=3000, seed=99,
-            phi_description="k_sparse_k=2", k=2,
+            n=4,
+            phi=phi,
+            noise_rate=0.0,
+            target_s=target_s,
+            epsilon=0.3,
+            delta=0.1,
+            theta=0.15,
+            a_sq=pw,
+            b_sq=pw,
+            qfs_shots=2000,
+            classical_samples_prover=1000,
+            classical_samples_verifier=3000,
+            seed=99,
+            phi_description="k_sparse_k=2",
+            k=2,
         )
         result = _run_trial_worker(spec)
         assert result.k == 2
@@ -605,11 +600,21 @@ class TestWorkerKSparseRouting:
             trial_rng = default_rng(seed)
             phi, target_s, pw = make_k_sparse(4, 2, trial_rng)
             spec = TrialSpec(
-                n=4, phi=phi, noise_rate=0.0, target_s=target_s,
-                epsilon=0.3, delta=0.1, theta=0.15, a_sq=pw, b_sq=pw,
-                qfs_shots=2000, classical_samples_prover=1000,
-                classical_samples_verifier=3000, seed=seed,
-                phi_description="test", k=2,
+                n=4,
+                phi=phi,
+                noise_rate=0.0,
+                target_s=target_s,
+                epsilon=0.3,
+                delta=0.1,
+                theta=0.15,
+                a_sq=pw,
+                b_sq=pw,
+                qfs_shots=2000,
+                classical_samples_prover=1000,
+                classical_samples_verifier=3000,
+                seed=seed,
+                phi_description="test",
+                k=2,
             )
             results.append(_run_trial_worker(spec))
         accept_rate = sum(1 for r in results if r.accepted) / len(results)
@@ -685,26 +690,6 @@ class TestRunBentExperiment:
         )
         for t in result.trials:
             assert t.hypothesis_correct == t.accepted
-
-
-class TestRunTruncationExperiment:
-    """Integration test for the truncation experiment runner."""
-
-    def test_runs_and_returns_result(self):
-        result = run_truncation_experiment(
-            n=4,
-            epsilon_range=[0.3],
-            verifier_sample_range=[200],
-            num_trials=2,
-            qfs_shots=500,
-            classical_samples_prover=300,
-            base_seed=42,
-            max_workers=1,
-        )
-        assert isinstance(result, ExperimentResult)
-        assert result.experiment_name == "verifier_truncation"
-        assert len(result.trials) == 2
-        assert result.parameters["n"] == 4
 
 
 class TestRunNoiseSweepExperiment:
@@ -787,7 +772,12 @@ class TestRunSoundnessMultiExperiment:
             base_seed=42,
             max_workers=1,
         )
-        for strategy in ("partial_real", "diluted_list", "shifted_coefficients", "subset_plus_noise"):
+        for strategy in (
+            "partial_real",
+            "diluted_list",
+            "shifted_coefficients",
+            "subset_plus_noise",
+        ):
             st = [t for t in result.trials if strategy in t.phi_description]
             reject_rate = sum(1 for t in st if not t.accepted) / len(st)
             assert reject_rate >= 0.8, (
@@ -818,9 +808,14 @@ class TestRunKSparseExperiment:
     def test_k1_uses_parity_path(self):
         """k=1 trials use verify_parity (k field is None)."""
         result = run_k_sparse_experiment(
-            n_range=range(4, 5), k_values=[1], num_trials=2,
-            qfs_shots=500, classical_samples_prover=300,
-            classical_samples_verifier=500, base_seed=42, max_workers=1,
+            n_range=range(4, 5),
+            k_values=[1],
+            num_trials=2,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            base_seed=42,
+            max_workers=1,
         )
         for t in result.trials:
             assert t.k is None
@@ -828,18 +823,28 @@ class TestRunKSparseExperiment:
     def test_k2_uses_fourier_sparse_path(self):
         """k=2 trials use verify_fourier_sparse (k field is 2)."""
         result = run_k_sparse_experiment(
-            n_range=range(4, 5), k_values=[2], num_trials=2,
-            qfs_shots=1000, classical_samples_prover=500,
-            classical_samples_verifier=1500, base_seed=42, max_workers=1,
+            n_range=range(4, 5),
+            k_values=[2],
+            num_trials=2,
+            qfs_shots=1000,
+            classical_samples_prover=500,
+            classical_samples_verifier=1500,
+            base_seed=42,
+            max_workers=1,
         )
         for t in result.trials:
             assert t.k == 2
 
     def test_save_roundtrip(self, tmp_path):
         result = run_k_sparse_experiment(
-            n_range=range(4, 5), k_values=[2], num_trials=1,
-            qfs_shots=1000, classical_samples_prover=500,
-            classical_samples_verifier=1500, base_seed=42, max_workers=1,
+            n_range=range(4, 5),
+            k_values=[2],
+            num_trials=1,
+            qfs_shots=1000,
+            classical_samples_prover=500,
+            classical_samples_verifier=1500,
+            base_seed=42,
+            max_workers=1,
         )
         path = str(tmp_path / "k_sparse.pb")
         result.save(path)
@@ -960,16 +965,6 @@ class TestCLIArgumentParsing:
             assert args.n_min == 4
             assert args.n_max == 6
 
-    def test_truncation_subcommand_with_fixed_n(self):
-        parser = argparse.ArgumentParser()
-        subparsers = parser.add_subparsers(dest="command")
-        sp = subparsers.add_parser("truncation")
-        sp.add_argument("--n", type=int, default=None)
-        sp.add_argument("--n-min", type=int, default=4)
-        args = parser.parse_args(["truncation", "--n", "8"])
-        assert args.command == "truncation"
-        assert args.n == 8
-
     def test_all_subcommand(self):
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(dest="command")
@@ -1030,15 +1025,32 @@ class TestTrialResultKSparseProto:
     def test_proto_roundtrip_k_sparse(self):
         """k-sparse fields survive proto serialization."""
         t = TrialResult(
-            n=4, seed=1, prover_time_s=0.1, qfs_shots=100,
-            qfs_postselected=50, postselection_rate=0.5, list_size=3,
-            prover_found_target=True, verifier_time_s=0.05,
-            verifier_samples=200, outcome="accept", accepted=True,
-            accumulated_weight=0.9, acceptance_threshold=0.85,
-            hypothesis_s=7, hypothesis_correct=True, total_copies=350,
-            total_time_s=0.15, epsilon=0.3, theta=0.3, delta=0.1,
-            a_sq=1.0, b_sq=1.0, phi_description="test",
-            k=2, hypothesis_coefficients={3: 0.6, 5: 0.4},
+            n=4,
+            seed=1,
+            prover_time_s=0.1,
+            qfs_shots=100,
+            qfs_postselected=50,
+            postselection_rate=0.5,
+            list_size=3,
+            prover_found_target=True,
+            verifier_time_s=0.05,
+            verifier_samples=200,
+            outcome="accept",
+            accepted=True,
+            accumulated_weight=0.9,
+            acceptance_threshold=0.85,
+            hypothesis_s=7,
+            hypothesis_correct=True,
+            total_copies=350,
+            total_time_s=0.15,
+            epsilon=0.3,
+            theta=0.3,
+            delta=0.1,
+            a_sq=1.0,
+            b_sq=1.0,
+            phi_description="test",
+            k=2,
+            hypothesis_coefficients={3: 0.6, 5: 0.4},
             misclassification_rate=0.15,
         )
         pb = _trial_to_proto(t)
@@ -1062,10 +1074,20 @@ class TestTrialSpecKField:
         """Existing specs without k should default to None."""
         phi = make_single_parity(4, target_s=3)
         spec = TrialSpec(
-            n=4, phi=phi, noise_rate=0.0, target_s=3, epsilon=0.3,
-            delta=0.1, theta=0.3, a_sq=1.0, b_sq=1.0, qfs_shots=500,
-            classical_samples_prover=300, classical_samples_verifier=500,
-            seed=42, phi_description="test",
+            n=4,
+            phi=phi,
+            noise_rate=0.0,
+            target_s=3,
+            epsilon=0.3,
+            delta=0.1,
+            theta=0.3,
+            a_sq=1.0,
+            b_sq=1.0,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            seed=42,
+            phi_description="test",
         )
         assert spec.k is None
 
@@ -1073,10 +1095,21 @@ class TestTrialSpecKField:
         """TrialSpec with explicit k stores it correctly."""
         phi = make_single_parity(4, target_s=3)
         spec = TrialSpec(
-            n=4, phi=phi, noise_rate=0.0, target_s=3, epsilon=0.3,
-            delta=0.1, theta=0.3, a_sq=1.0, b_sq=1.0, qfs_shots=500,
-            classical_samples_prover=300, classical_samples_verifier=500,
-            seed=42, phi_description="test", k=4,
+            n=4,
+            phi=phi,
+            noise_rate=0.0,
+            target_s=3,
+            epsilon=0.3,
+            delta=0.1,
+            theta=0.3,
+            a_sq=1.0,
+            b_sq=1.0,
+            qfs_shots=500,
+            classical_samples_prover=300,
+            classical_samples_verifier=500,
+            seed=42,
+            phi_description="test",
+            k=4,
         )
         assert spec.k == 4
 
@@ -1093,15 +1126,32 @@ class TestTrialResultKSparseFields:
     def test_k_sparse_fields_set(self):
         """TrialResult with explicit k-sparse fields stores them."""
         t = TrialResult(
-            n=4, seed=1, prover_time_s=0.1, qfs_shots=100,
-            qfs_postselected=50, postselection_rate=0.5, list_size=3,
-            prover_found_target=True, verifier_time_s=0.05,
-            verifier_samples=200, outcome="accept", accepted=True,
-            accumulated_weight=0.9, acceptance_threshold=0.85,
-            hypothesis_s=7, hypothesis_correct=True, total_copies=350,
-            total_time_s=0.15, epsilon=0.3, theta=0.3, delta=0.1,
-            a_sq=1.0, b_sq=1.0, phi_description="test",
-            k=2, hypothesis_coefficients={3: 0.6, 5: 0.4},
+            n=4,
+            seed=1,
+            prover_time_s=0.1,
+            qfs_shots=100,
+            qfs_postselected=50,
+            postselection_rate=0.5,
+            list_size=3,
+            prover_found_target=True,
+            verifier_time_s=0.05,
+            verifier_samples=200,
+            outcome="accept",
+            accepted=True,
+            accumulated_weight=0.9,
+            acceptance_threshold=0.85,
+            hypothesis_s=7,
+            hypothesis_correct=True,
+            total_copies=350,
+            total_time_s=0.15,
+            epsilon=0.3,
+            theta=0.3,
+            delta=0.1,
+            a_sq=1.0,
+            b_sq=1.0,
+            phi_description="test",
+            k=2,
+            hypothesis_coefficients={3: 0.6, 5: 0.4},
             misclassification_rate=0.15,
         )
         assert t.k == 2
@@ -1163,7 +1213,9 @@ class TestRunThetaSensitivityExperiment:
     """Integration test for the theta sensitivity experiment runner."""
 
     def test_runs_and_returns_result(self):
-        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+        from experiments.harness.theta_sensitivity import (
+            run_theta_sensitivity_experiment,
+        )
 
         result = run_theta_sensitivity_experiment(
             n_range=range(4, 5),
@@ -1182,7 +1234,9 @@ class TestRunThetaSensitivityExperiment:
         assert result.wall_clock_s > 0
 
     def test_theta_appears_in_phi_description(self):
-        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+        from experiments.harness.theta_sensitivity import (
+            run_theta_sensitivity_experiment,
+        )
 
         result = run_theta_sensitivity_experiment(
             n_range=range(4, 5),
@@ -1199,7 +1253,9 @@ class TestRunThetaSensitivityExperiment:
 
     def test_low_theta_extracts_more(self):
         """Lower theta should extract more coefficients (larger |L|)."""
-        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+        from experiments.harness.theta_sensitivity import (
+            run_theta_sensitivity_experiment,
+        )
 
         result = run_theta_sensitivity_experiment(
             n_range=range(4, 5),
@@ -1223,7 +1279,9 @@ class TestRunThetaSensitivityExperiment:
         )
 
     def test_save_roundtrip(self, tmp_path):
-        from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
+        from experiments.harness.theta_sensitivity import (
+            run_theta_sensitivity_experiment,
+        )
 
         result = run_theta_sensitivity_experiment(
             n_range=range(4, 5),

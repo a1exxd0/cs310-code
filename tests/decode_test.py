@@ -101,25 +101,6 @@ def bent_pb(sample_trial, tmp_path):
 
 
 @pytest.fixture
-def truncation_pb(sample_trial, tmp_path):
-    return _save_experiment(
-        "verifier_truncation",
-        sample_trial,
-        {
-            "n": 4,
-            "noise_rate": 0.15,
-            "a_sq": 0.49,
-            "epsilon_range": [0.3],
-            "verifier_sample_range": [200],
-            "num_trials": 1,
-            "qfs_shots": 100,
-        },
-        tmp_path,
-        "truncation_test.pb",
-    )
-
-
-@pytest.fixture
 def noise_sweep_pb(sample_trial, tmp_path):
     return _save_experiment(
         "noise_sweep",
@@ -164,7 +145,6 @@ class TestGuessExperiment:
         [
             ("scaling_4_10_20.pb", "scaling"),
             ("bent_4_16_24.pb", "bent_function"),
-            ("truncation_6_6_24.pb", "verifier_truncation"),
             ("noise_sweep_4_13_24.pb", "noise_sweep"),
             ("soundness_4_16_50.pb", "soundness"),
         ],
@@ -195,10 +175,6 @@ class TestDecode:
     def test_bent_roundtrip(self, bent_pb):
         json_str = decode(bent_pb)
         assert '"experimentName": "bent_function"' in json_str
-
-    def test_truncation_roundtrip(self, truncation_pb):
-        json_str = decode(truncation_pb)
-        assert '"n": 4' in json_str
 
     def test_noise_sweep_roundtrip(self, noise_sweep_pb):
         json_str = decode(noise_sweep_pb)
@@ -241,9 +217,7 @@ class TestCLI:
         assert '"experimentName": "scaling"' in out
 
     def test_multiple_files_to_stdout(self, scaling_pb, bent_pb, capsys, monkeypatch):
-        monkeypatch.setattr(
-            "sys.argv", ["decode", str(scaling_pb), str(bent_pb)]
-        )
+        monkeypatch.setattr("sys.argv", ["decode", str(scaling_pb), str(bent_pb)])
         main()
         out = capsys.readouterr().out
         assert f"--- {scaling_pb} ---" in out

@@ -53,35 +53,6 @@ def run_noise_sweep_experiment(
     confounded the interpretation of any non-monotonicity in the
     acceptance curve.
 
-    .. note::
-
-       **Audit fixes** (``audit/noise_sweep.md``):
-
-       - **MAJOR-1:** the :math:`\eta` range now extends to
-         :math:`\{0.42, 0.44, 0.46, 0.48\}` so the sweep crosses the
-         theoretical breakdown :math:`\eta_{\max} \approx 0.4470`
-         (set by :math:`(1 - 2\eta)^2 = \varepsilon^2/8`).  Previously
-         the sweep stopped at :math:`\eta = 0.40`, never entering the
-         failure regime.
-       - **MAJOR-2** (not fixed in this revision): the headline
-         acceptance dip in :math:`\eta \in [0.05, 0.30]` is dominated
-         by squared-estimator variance against the slack
-         :math:`\varepsilon^2/8 = 0.01125`, not Lemma 6 attenuation.
-         For a sharper acceptance figure ``classical_samples_verifier``
-         could be bumped to :math:`\sim 30000`; the cleanest empirical
-         confirmation of Lemma 6 is already
-         ``fourier_weight_attenuation.png``.
-       - **MAJOR-3:** :math:`\vartheta` is now held fixed across the
-         sweep (see above).
-       - The hard-coded ``qfs_shots=2000``,
-         ``classical_samples_prover=1000``,
-         ``classical_samples_verifier=3000`` are still below the
-         analytic Hoeffding budget; these are documented limitations
-         tracked in ``audit/FOLLOW_UPS.md``.
-
-       The on-disk ``results/noise_sweep_*.pb`` was generated under
-       the old configuration and is invalid until re-run.
-
     Parameters
     ----------
     n_range : range
@@ -113,8 +84,19 @@ def run_noise_sweep_experiment(
         # eta_max = (1 - eps/(2*sqrt(2)))/2 ~= 0.4470 for eps=0.3 so the
         # sweep crosses the theoretical breakdown.
         noise_rates = [
-            0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4,
-            0.42, 0.44, 0.46, 0.48,
+            0.0,
+            0.05,
+            0.1,
+            0.15,
+            0.2,
+            0.25,
+            0.3,
+            0.35,
+            0.4,
+            0.42,
+            0.44,
+            0.46,
+            0.48,
         ]
 
     print(
@@ -159,8 +141,11 @@ def run_noise_sweep_experiment(
 
     t0 = time.time()
     trials = run_trials_parallel(
-        specs, max_workers=max_workers, label="noise",
-        shard_index=shard_index, num_shards=num_shards,
+        specs,
+        max_workers=max_workers,
+        label="noise",
+        shard_index=shard_index,
+        num_shards=num_shards,
     )
     wall = time.time() - t0
 

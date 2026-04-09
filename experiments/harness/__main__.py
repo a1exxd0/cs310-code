@@ -25,7 +25,6 @@ from experiments.harness.k_sparse import run_k_sparse_experiment
 from experiments.harness.theta_sensitivity import run_theta_sensitivity_experiment
 from experiments.harness.scaling import run_scaling_experiment
 from experiments.harness.bent import run_bent_experiment
-from experiments.harness.truncation import run_truncation_experiment
 from experiments.harness.noise import run_noise_sweep_experiment
 from experiments.harness.soundness import run_soundness_experiment
 from experiments.harness.soundness_multi import run_soundness_multi_experiment
@@ -33,8 +32,12 @@ from experiments.harness.soundness_multi import run_soundness_multi_experiment
 
 def _add_common_args(parser: argparse.ArgumentParser):
     """Add arguments shared by all subcommands."""
-    parser.add_argument("--n-min", type=int, default=4, help="Minimum n for sweep experiments")
-    parser.add_argument("--n-max", type=int, default=10, help="Maximum n for sweep experiments")
+    parser.add_argument(
+        "--n-min", type=int, default=4, help="Minimum n for sweep experiments"
+    )
+    parser.add_argument(
+        "--n-max", type=int, default=10, help="Maximum n for sweep experiments"
+    )
     parser.add_argument(
         "--trials", type=int, default=20, help="Trials per configuration"
     )
@@ -87,7 +90,11 @@ def _run_scaling(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"scaling_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"scaling_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -106,20 +113,6 @@ def _run_bent(args):
     return [r]
 
 
-def _run_truncation(args):
-    output_dir = Path(args.output_dir)
-    fixed_n = args.n if args.n is not None else args.n_min
-    r = run_truncation_experiment(
-        n=fixed_n,
-        num_trials=args.trials,
-        base_seed=args.seed,
-        max_workers=args.workers,
-        **_shard_kwargs(args),
-    )
-    r.save(_output_path(output_dir, f"truncation_{fixed_n}_{fixed_n}_{args.trials}", args))
-    return [r]
-
-
 def _run_noise(args):
     output_dir = Path(args.output_dir)
     r = run_noise_sweep_experiment(
@@ -129,7 +122,11 @@ def _run_noise(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"noise_sweep_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"noise_sweep_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -143,7 +140,11 @@ def _run_soundness(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"soundness_{args.n_min}_{args.n_max}_{soundness_trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"soundness_{args.n_min}_{args.n_max}_{soundness_trials}", args
+        )
+    )
     return [r]
 
 
@@ -157,7 +158,13 @@ def _run_soundness_multi(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"soundness_multi_{args.n_min}_{args.n_max}_{soundness_trials}", args))
+    r.save(
+        _output_path(
+            output_dir,
+            f"soundness_multi_{args.n_min}_{args.n_max}_{soundness_trials}",
+            args,
+        )
+    )
     return [r]
 
 
@@ -170,7 +177,11 @@ def _run_average_case(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"average_case_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"average_case_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -183,7 +194,11 @@ def _run_gate_noise(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"gate_noise_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"gate_noise_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -196,7 +211,11 @@ def _run_k_sparse(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"k_sparse_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"k_sparse_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -209,7 +228,13 @@ def _run_theta_sensitivity(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"theta_sensitivity_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir,
+            f"theta_sensitivity_{args.n_min}_{args.n_max}_{args.trials}",
+            args,
+        )
+    )
     return [r]
 
 
@@ -222,7 +247,11 @@ def _run_ab_regime(args):
         max_workers=args.workers,
         **_shard_kwargs(args),
     )
-    r.save(_output_path(output_dir, f"ab_regime_{args.n_min}_{args.n_max}_{args.trials}", args))
+    r.save(
+        _output_path(
+            output_dir, f"ab_regime_{args.n_min}_{args.n_max}_{args.trials}", args
+        )
+    )
     return [r]
 
 
@@ -237,7 +266,6 @@ def _run_all(args):
     experiments = []
     experiments.extend(_run_scaling(args))
     experiments.extend(_run_bent(args))
-    experiments.extend(_run_truncation(args))
     experiments.extend(_run_noise(args))
     experiments.extend(_run_soundness(args))
     experiments.extend(_run_soundness_multi(args))
@@ -263,18 +291,6 @@ def main():
     sp = subparsers.add_parser("bent", help="Bent function worst-case experiment")
     _add_common_args(sp)
 
-    # --- truncation ---
-    sp = subparsers.add_parser("truncation", help="Verifier truncation tradeoff experiment")
-    _add_common_args(sp)
-    sp.add_argument(
-        "--n",
-        type=int,
-        default=None,
-        help="Fixed n for the truncation experiment, which sweeps a 2-D "
-             "grid of (epsilon x verifier_samples) at a single dimension "
-             "rather than sweeping n. Defaults to n-min when not specified.",
-    )
-
     # --- noise ---
     sp = subparsers.add_parser("noise", help="Noise sweep experiment")
     _add_common_args(sp)
@@ -284,46 +300,49 @@ def main():
     _add_common_args(sp)
 
     # --- soundness_multi ---
-    sp = subparsers.add_parser("soundness_multi", help="Soundness against dishonest provers with multi-element targets")
+    sp = subparsers.add_parser(
+        "soundness_multi",
+        help="Soundness against dishonest provers with multi-element targets",
+    )
     _add_common_args(sp)
 
     # --- average_case ---
-    sp = subparsers.add_parser("average_case", help="Average-case performance across function families")
+    sp = subparsers.add_parser(
+        "average_case", help="Average-case performance across function families"
+    )
     _add_common_args(sp)
 
     # --- gate_noise ---
-    sp = subparsers.add_parser("gate_noise", help="Gate-level depolarising noise experiment")
+    sp = subparsers.add_parser(
+        "gate_noise", help="Gate-level depolarising noise experiment"
+    )
     _add_common_args(sp)
 
     # --- k_sparse ---
-    sp = subparsers.add_parser("k_sparse", help="k-Fourier-sparse verification path experiment")
+    sp = subparsers.add_parser(
+        "k_sparse", help="k-Fourier-sparse verification path experiment"
+    )
     _add_common_args(sp)
 
     # --- theta_sensitivity ---
-    sp = subparsers.add_parser("theta_sensitivity", help="Theta sensitivity: extraction boundary mapping")
+    sp = subparsers.add_parser(
+        "theta_sensitivity", help="Theta sensitivity: extraction boundary mapping"
+    )
     _add_common_args(sp)
 
     # --- ab_regime ---
-    sp = subparsers.add_parser("ab_regime", help="a^2 != b^2 distributional regime experiment")
+    sp = subparsers.add_parser(
+        "ab_regime", help="a^2 != b^2 distributional regime experiment"
+    )
     _add_common_args(sp)
 
     # --- all ---
     sp = subparsers.add_parser("all", help="Run all experiments")
     _add_common_args(sp)
-    sp.add_argument(
-        "--n",
-        type=int,
-        default=None,
-        help="Fixed n for the truncation experiment. Defaults to n-min.",
-    )
 
     # --- merge ---
-    sp = subparsers.add_parser(
-        "merge", help="Merge sharded experiment result files"
-    )
-    sp.add_argument(
-        "shards", nargs="+", type=Path, help="Shard .pb files to merge"
-    )
+    sp = subparsers.add_parser("merge", help="Merge sharded experiment result files")
+    sp.add_argument("shards", nargs="+", type=Path, help="Shard .pb files to merge")
     sp.add_argument(
         "-o", "--output", type=Path, required=True, help="Output merged .pb file"
     )
@@ -347,7 +366,6 @@ def main():
     dispatch = {
         "scaling": _run_scaling,
         "bent": _run_bent,
-        "truncation": _run_truncation,
         "noise": _run_noise,
         "soundness": _run_soundness,
         "soundness_multi": _run_soundness_multi,
