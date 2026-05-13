@@ -134,7 +134,6 @@ def _run_trial_worker(spec: TrialSpec) -> TrialResult:
     if spec.dishonest_strategy is not None:
         return _run_dishonest_trial(spec, state)
 
-    # --- Build gate-level noise model (if requested) ---
     noise_model = None
     if spec.gate_noise_rate is not None and spec.gate_noise_rate > 0:
         from qiskit_aer.noise import NoiseModel, depolarizing_error
