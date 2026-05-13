@@ -155,8 +155,6 @@ def run_soundness_multi_experiment(
         },
     )
 
-    # Print per-strategy rejection rates
-    print()
     for strategy in strategies:
         st = [t for t in trials if strategy in t.phi_description]
         rej = sum(1 for t in st if not t.accepted)

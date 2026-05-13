@@ -26,33 +26,6 @@ def run_noise_sweep_experiment(
 ) -> ExperimentResult:
     r"""Noise sweep: verification under increasing label-flip noise.
 
-    For each :math:`n` in *n_range* and each noise rate :math:`\eta`,
-    the MoS state is constructed from the effective label probabilities
-    (Definition 5(iii)):
-
-    .. math::
-
-        \varphi_{\mathrm{eff}}(x) = (1 - 2\eta)\,\varphi(x) + \eta
-
-    The effective Fourier coefficient becomes
-    :math:`\hat{\tilde\phi}_{\mathrm{eff}}(s) = (1 - 2\eta)\,
-    \hat{\tilde\phi}(s)`, and the distribution class promise is
-    :math:`a^2 = b^2 = (1 - 2\eta)^2`.
-
-    As :math:`\eta \to 0.5`, the signal :math:`(1 - 2\eta) \to 0` and
-    the protocol should eventually fail.  The experiment measures the
-    empirical acceptance and correctness rates as functions of
-    :math:`\eta`, testing the noise-robust verification results of §6.2.
-
-    The Fourier resolution threshold :math:`\vartheta` is held
-    **fixed** at :math:`\vartheta = \varepsilon` across the entire
-    sweep (audit fix MAJOR-3 in ``audit/noise_sweep.md``).  Previously
-    :math:`\vartheta` was adapted per noise level
-    (:math:`\vartheta = \min(\varepsilon,\, 0.9 \cdot (1 - 2\eta))`),
-    which silently varied two parameters along the same axis and
-    confounded the interpretation of any non-monotonicity in the
-    acceptance curve.
-
     Parameters
     ----------
     n_range : range
@@ -80,9 +53,6 @@ def run_noise_sweep_experiment(
     ExperimentResult
     """
     if noise_rates is None:
-        # Audit fix MAJOR-1 (audit/noise_sweep.md): extended past
-        # eta_max = (1 - eps/(2*sqrt(2)))/2 ~= 0.4470 for eps=0.3 so the
-        # sweep crosses the theoretical breakdown.
         noise_rates = [
             0.0,
             0.05,
@@ -110,10 +80,6 @@ def run_noise_sweep_experiment(
         for eta in noise_rates:
             effective_coeff = 1.0 - 2.0 * eta
             a_sq = effective_coeff**2
-            # Audit fix MAJOR-3 (audit/noise_sweep.md): hold theta fixed
-            # at epsilon across the entire eta sweep.  Previously theta
-            # was adapted as ``min(epsilon, 0.9*(1-2*eta))``, which
-            # silently varied a second parameter along the eta axis.
             theta = epsilon
 
             for _ in range(num_trials):
