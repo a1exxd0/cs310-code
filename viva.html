@@ -283,15 +283,10 @@
   <div style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width:1600px;">
     <div class="pill" style="margin-bottom:36px; border-color:#4a4742; color:#cbc6bc;">VIVA  ·  10-MINUTE PRESENTATION  ·  LIVE DEMO</div>
 
-    <h1 class="title" style="font-size:84px; line-height:1.18; margin-bottom:32px;">
-      Implementing &amp; empirically evaluating<br>
-      the <em>Mixture-of-Superpositions</em> protocol<br>
-      <span style="color:#a6a097;">for classically verifiable quantum learning.</span>
-    </h1>
+    <h1 class="title" style="font-size:84px; line-height:1.18; margin-bottom:32px;">Implementing &amp; empirically evaluating
+the Mixture-of-Superpositions-based protocol for classically verifiable quantum learning.</h1>
 
-    <p class="body" style="color:#cbc6bc; font-size:26px; max-width:78ch; margin-top:8px;">
-      The first concrete, end-to-end instantiation of the protocol of <span style="font-style:italic;">Caro, Hinsche, Ioannou, Nietner &amp; Sweke (2024)</span>, whose Theorem&nbsp;12 establishes existence only asymptotically. Also the first empirical map of where it actually breaks.
-    </p>
+    <p class="body" style="color:#cbc6bc; font-size:26px; max-width:78ch; margin-top:8px;"></p>
   </div>
 
   <div class="strip" style="align-items:flex-end;">
@@ -326,7 +321,7 @@
     </div>
   </div>
 
-  <h2 class="lede" style="margin-bottom:28px;">The headline contribution is an implementation. Everything else is what that implementation lets us see.</h2>
+  <h2 class="lede" style="margin-bottom:28px;">Contents for today's Viva</h2>
 
   <div class="two-col" style="flex:1; min-height:0; grid-template-columns: 1.1fr 0.9fr; gap:72px;">
 
@@ -383,7 +378,7 @@
 <section data-screen-label="03 Built">
   <div class="frame">
     <div class="left">
-      <span class="num">03 / 09</span>
+      <span class="num"></span>
       <span class="section-name">What was built</span>
     </div>
     <div class="right">
@@ -492,7 +487,7 @@
         <h3 class="section-h">Engineering scale</h3>
         <div class="stat-row">
           <div class="stat"><span class="v">~30k</span><span class="l">trials</span></div>
-          <div class="stat"><span class="v">7 / 12</span><span class="l">experiments · 5 omitted (correctness)</span></div>
+          <div class="stat"><span class="v">7</span><span class="l">experiments</span></div>
           <div class="stat"><span class="v">4</span><span class="l">empirical axes</span></div>
         </div>
         <div class="stat-row" style="margin-top:18px;">
@@ -624,7 +619,8 @@
             <text x="44" y="86" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18">0.36s</text>
             <text x="362" y="71" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18" text-anchor="middle">9.1s</text>
             <text x="402" y="50" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18">73.6s</text>
-            <text x="468" y="19" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18" text-anchor="end">1203s</text>
+            <text x="438" y="34" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18" text-anchor="middle">946s</text>
+            <text x="468" y="14" font-family="IBM Plex Mono" font-size="9" fill="#8a2a18" text-anchor="end">1203s</text>
           </svg>
         </div>
       </div>
@@ -661,7 +657,7 @@
 At n=4: predicted 31, observed 29 out of 100 trials.</div>
 
       <div class="key">
-        <strong>Limitation:</strong> The list-size bound <span class="eq">64<span class="var">b</span>²/ϑ²</span> never triggered, because no strategy submitted <span class="eq">|<span class="var">L</span>|&nbsp;&gt;&nbsp;64</span>. Future work.
+        <strong>Limitation:</strong> The list-size bound <span class="eq">64<span class="var">b</span>²/ϑ²</span>&nbsp;≈&nbsp;711 never triggered: largest adversarial list submitted had <span class="eq">|<span class="var">L</span>|&nbsp;=&nbsp;10</span>. Future work.
       </div>
     </div>
 
@@ -765,7 +761,7 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
             <!-- group 4: subset plus noise -->
             <rect x="516" y="212" width="40" height="108" fill="#8a2a18"/>
             <rect x="562" y="86" width="40" height="234" fill="#b95738" opacity="0.55"/>
-            <text x="559" y="342" text-anchor="middle">subset + noise ★</text>
+            <text x="559" y="342" text-anchor="middle">subset + noise</text>
             <text x="536" y="204" text-anchor="middle" font-family="IBM Plex Mono" font-weight="500" font-size="14" fill="#8a2a18">91</text>
             <text x="582" y="78" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#161512">98</text>
           </g>
@@ -852,7 +848,7 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
           <line x1="60" y1="270" x2="640" y2="270" stroke="#75716a"/>
 
           <!-- y-axis label -->
-          <text x="18" y="155" font-family="IBM Plex Sans Condensed" font-size="13" letter-spacing="2" fill="#75716a" transform="rotate(-90 18 155)" text-anchor="middle">QFS MASS AT s★</text>
+          <text x="18" y="155" font-family="IBM Plex Sans Condensed" font-size="13" letter-spacing="2" fill="#75716a" transform="rotate(-90 18 155)" text-anchor="middle">QFS MASS AT s*</text>
 
           <!-- x ticks every 0.1, 0..0.5; map x = 60 + (η/0.5)*580 -->
           <g font-family="IBM Plex Mono" font-size="12" fill="#75716a">
@@ -873,8 +869,8 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
 
           <!-- breakdown line at η_max = 0.4470 -->
           <line x1="579" y1="40" x2="579" y2="270" stroke="#8a2a18" stroke-width="1.4" stroke-dasharray="5 3" opacity="0.95"/>
-          <text x="582" y="56" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">η_max ≈ 0.4470</text>
-          <text x="582" y="74" font-family="IBM Plex Serif" font-style="italic" font-size="12" fill="#8a2a18">(1−2η)²−ε²/8 = 0</text>
+          <text x="576" y="56" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18" text-anchor="end">η_max ≈ 0.4470</text>
+          <text x="576" y="74" font-family="IBM Plex Serif" font-style="italic" font-size="12" fill="#8a2a18" text-anchor="end">(1−2η)²−ε²/8 = 0</text>
 
           <!-- theory curve: y = 270 - (1-2η)² * 230 -->
           <!-- sample at η = 0..0.5, dense -->
@@ -928,7 +924,7 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
       </div>
 
       <div class="chartbox" style="padding:22px 22px 8px;">
-        <svg viewBox="0 0 660 320" width="100%" style="display:block;">
+        <svg viewBox="0 0 660 352" width="100%" style="display:block;">
           <!-- frame -->
           <line x1="64" y1="40" x2="64" y2="270" stroke="#75716a"/>
           <line x1="64" y1="270" x2="640" y2="270" stroke="#75716a"/>
@@ -953,37 +949,39 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
             <line x1="60" y1="270" x2="64" y2="270" stroke="#75716a"/><text x="56" y="274" text-anchor="end">0.0</text>
           </g>
 
-          <!-- horizontal reference for noise floor 1/2^n crossing ϑ²/4 -->
-          <line x1="64" y1="217.5" x2="640" y2="217.5" stroke="#75716a" stroke-dasharray="2 4" opacity="0.6"/>
-          <text x="640" y="213" font-family="IBM Plex Mono" font-size="11" fill="#75716a" text-anchor="end">ϑ²/4 = 0.0225 threshold</text>
+          <!-- 1 − δ acceptance reference line (matches report Fig. 4) -->
+          <line x1="64" y1="63" x2="640" y2="63" stroke="#75716a" stroke-dasharray="2 4" opacity="0.7"/>
+          <text x="640" y="59" font-family="IBM Plex Mono" font-size="11" fill="#75716a" text-anchor="end">1 − δ = 0.9</text>
 
-          <!-- curves: n=4 (top, robust), n=5 (still robust), n=6 (collapse), n=7, n=8 -->
-          <!-- y(rate) = 270 - rate*230 -->
+          <!-- curves from gate_noise_summary.csv -->
+          <!-- y(acceptance) = 270 - acceptance*230; x(p) on log scale: -->
+          <!-- p:    1e-4   5e-4   1e-3   2e-3   5e-3   1e-2   2e-2   5e-2   1e-1   2e-1   5e-1 -->
+          <!-- x:    64     173    220    267    328    376    422    484    531    578    640 -->
 
-          <!-- n=4: roughly 1.0 across all p -->
+          <!-- n=4: flat 100% across all p -->
           <polyline fill="none" stroke="#2d4a6e" stroke-width="2" points="
-            64,40 105,40 158,40 220,40 268,40 326,40 375,42 433,46 482,52 531,60 585,72 640,80
+            64,40 173,40 220,40 267,40 328,40 376,40 422,40 484,40 531,40 578,40 640,40
           "/>
-          <!-- n=5: 1.0 to p~0.05, then slight drop -->
+          <!-- n=5: 100% until p≤0.002, dips 90-98% thereafter (non-monotonic, never collapses) -->
           <polyline fill="none" stroke="#6688aa" stroke-width="2" points="
-            64,40 105,40 158,40 220,40 268,40 326,42 375,48 433,60 482,80 531,108 585,150 640,180
+            64,40 173,40 220,40 267,40 328,44.6 376,49.2 422,63 484,40 531,58.4 578,53.8 640,44.6
           "/>
-          <!-- n=6: cliff at p~0.002 -->
+          <!-- n=6: sharp cliff between p=0.001 and p=0.002, then floor ~4-12% -->
           <polyline fill="none" stroke="#b95738" stroke-width="2.2" points="
-            64,40 105,40 158,42 220,52 268,76 326,116 375,165 433,210 482,238 531,256 585,265 640,268
+            64,40 173,40 220,40 267,251.6 328,251.6 376,256.2 422,260.8 484,256.2 531,260.8 578,251.6 640,242.4
           "/>
-          <!-- n=7: cliff earlier -->
+          <!-- n=7: cliff between p=0.0001 and p=0.0005 (2% at 5e-4, then 0%) -->
           <polyline fill="none" stroke="#8a2a18" stroke-width="2.2" points="
-            64,40 105,44 158,60 220,108 268,168 326,220 375,250 433,263 482,268 531,269 585,270 640,270
+            64,40 173,265.4 220,270 267,270 328,270 376,270 422,270 484,270 531,270 578,270 640,270
           "/>
-          <!-- n=8: even earlier -->
+          <!-- n=8: cliff between p=0.0001 and p=0.0005 (straight to 0%) -->
           <polyline fill="none" stroke="#5a1c10" stroke-width="2.2" points="
-            64,42 105,56 158,92 220,170 268,225 326,255 375,266 433,269 482,270 531,270 585,270 640,270
+            64,40 173,270 220,270 267,270 328,270 376,270 422,270 484,270 531,270 578,270 640,270
           "/>
 
-          <!-- cliff annotation -->
-          <line x1="290" y1="36" x2="290" y2="265" stroke="#8a2a18" stroke-dasharray="3 3" opacity="0.65"/>
-          <text x="296" y="58" font-family="IBM Plex Serif" font-style="italic" font-size="14" fill="#8a2a18">cliff at n ≥ 6</text>
+          <!-- cliff annotation: n=6 cliff sits at p ≈ 1.5×10⁻³ -->
+          <line x1="243" y1="36" x2="243" y2="265" stroke="#8a2a18" stroke-dasharray="3 3" opacity="0.65"/>
+          <text x="249" y="58" font-family="IBM Plex Serif" font-style="italic" font-size="14" fill="#8a2a18">n=6 cliff (earlier for n≥7)</text>
 
           <!-- legend -->
           <g font-family="IBM Plex Sans Condensed" font-size="12" fill="#3a3733" transform="translate(340,40)">
@@ -997,7 +995,7 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
       </div>
 
       <div class="key" style="font-size:20px;">
-        Uniform noise floor <span class="eq">1/2ⁿ</span> crosses the extraction threshold <span class="eq">ϑ²/4</span> precisely at <strong>n = 5</strong>.<br>
+        Uniform noise floor <span class="eq">1/2ⁿ</span> exceeds the extraction threshold <span class="eq">ϑ²/4</span> for <strong>n ≤ 5</strong>; crosses below at <strong>n = 6</strong>.<br>
         Explains why n ≤ 5 looks robust and n ≥ 6 collapses.
         Ma–Su–Deng cover output-side noise, not per-gate depolarising. <em>Genuine open question.</em>
       </div>
@@ -1051,45 +1049,51 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
           <line x1="60" y1="220" x2="520" y2="220" stroke="#75716a"/>
 
           <g font-family="IBM Plex Mono" font-size="12" fill="#75716a">
-            <line x1="56" y1="30" x2="60" y2="30" stroke="#75716a"/><text x="52" y="34" text-anchor="end">256</text>
-            <line x1="56" y1="125" x2="60" y2="125" stroke="#75716a"/><text x="52" y="129" text-anchor="end">16</text>
+            <line x1="56" y1="30" x2="60" y2="30" stroke="#75716a"/><text x="52" y="34" text-anchor="end">16</text>
+            <line x1="56" y1="125" x2="60" y2="125" stroke="#75716a"/><text x="52" y="129" text-anchor="end">4</text>
             <line x1="56" y1="220" x2="60" y2="220" stroke="#75716a"/><text x="52" y="224" text-anchor="end">0</text>
 
-            <!-- x ticks at n = 4..8 -->
-            <text x="90" y="240" text-anchor="middle">4</text>
-            <text x="178" y="240" text-anchor="middle">5</text>
-            <text x="266" y="240" text-anchor="middle">6</text>
-            <text x="354" y="240" text-anchor="middle">7</text>
-            <text x="442" y="240" text-anchor="middle">8</text>
-            <text x="285" y="262" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="13" letter-spacing="2" fill="#75716a">n (input bits)</text>
+            <!-- x ticks at measured n = 4, 6, 8, 10, 12, 14, 16 -->
+            <text x="92"  y="240" text-anchor="middle">4</text>
+            <text x="158" y="240" text-anchor="middle">6</text>
+            <text x="224" y="240" text-anchor="middle">8</text>
+            <text x="290" y="240" text-anchor="middle">10</text>
+            <text x="356" y="240" text-anchor="middle">12</text>
+            <text x="422" y="240" text-anchor="middle">14</text>
+            <text x="488" y="240" text-anchor="middle">16</text>
+            <text x="290" y="262" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="13" letter-spacing="2" fill="#75716a">n (input bits)</text>
           </g>
 
-          <!-- predicted crossover -->
-          <line x1="220" y1="20" x2="220" y2="220" stroke="#8a2a18" stroke-dasharray="4 4" opacity="0.85"/>
-          <text x="222" y="42" font-family="IBM Plex Mono" font-size="12" fill="#8a2a18">n ≈ 5.47</text>
+          <!-- predicted crossover at n ≈ 5.47 (between n=4 and n=6 ticks) -->
+          <line x1="140" y1="20" x2="140" y2="220" stroke="#8a2a18" stroke-dasharray="4 4" opacity="0.85"/>
+          <text x="143" y="42" font-family="IBM Plex Mono" font-size="12" fill="#8a2a18">n ≈ 5.47</text>
 
-          <!-- bars: n=4 → 16 (full), n=5 → 32, n=6 → 1-2 collapse, n=7,8 → 0-1 -->
-          <!-- y from 0..256 maps to y=220..30, range 190; log-ish scale: use log(1+|L|) -->
-          <!-- Just height: n=4 |L|=16 -> log(17)/log(257) * 190 = ~57 -->
+          <!-- bars from bent_summary.csv: n=4 |L|=16, n=6 |L|=1, n≥8 |L|=0 -->
           <g>
-            <rect x="74" y="139" width="32" height="81" fill="#2d4a6e"/>
-            <text x="90" y="132" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#161512">~16</text>
+            <rect x="76" y="139" width="32" height="81" fill="#2d4a6e"/>
+            <text x="92" y="132" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#161512">16</text>
 
-            <rect x="162" y="118" width="32" height="102" fill="#2d4a6e"/>
-            <text x="178" y="111" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#161512">~32</text>
+            <rect x="142" y="209" width="32" height="11" fill="#8a2a18"/>
+            <text x="158" y="200" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">1</text>
 
-            <rect x="250" y="209" width="32" height="11" fill="#8a2a18"/>
-            <text x="266" y="200" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">1–2</text>
+            <rect x="208" y="217" width="32" height="3" fill="#8a2a18"/>
+            <text x="224" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0</text>
 
-            <rect x="338" y="213" width="32" height="7" fill="#8a2a18"/>
-            <text x="354" y="206" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0–1</text>
+            <rect x="274" y="217" width="32" height="3" fill="#8a2a18"/>
+            <text x="290" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0</text>
 
-            <rect x="426" y="215" width="32" height="5" fill="#8a2a18"/>
-            <text x="442" y="208" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0–1</text>
+            <rect x="340" y="217" width="32" height="3" fill="#8a2a18"/>
+            <text x="356" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0</text>
+
+            <rect x="406" y="217" width="32" height="3" fill="#8a2a18"/>
+            <text x="422" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0</text>
+
+            <rect x="472" y="217" width="32" height="3" fill="#8a2a18"/>
+            <text x="488" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#8a2a18">0</text>
           </g>
 
           <!-- predicted callout -->
-          <text x="285" y="60" font-family="IBM Plex Serif" font-style="italic" font-size="14" fill="#3a3733">predicted to within one qubit</text>
+          <text x="295" y="60" font-family="IBM Plex Serif" font-style="italic" font-size="14" fill="#3a3733">collapses at predicted boundary</text>
         </svg>
       </div>
     </div>
@@ -1107,60 +1111,119 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
 
       <div class="chartbox" style="padding:22px 22px 14px;">
         <div class="lbl"><span class="strong">Fig. 6</span> · acceptance rate · darker = higher</div>
-        <svg viewBox="0 0 580 280" width="100%" style="display:block; margin-top:8px;">
-          <!-- heatmap: rows n=4..16 (13 rows), cols ϑ ∈ {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5} (10 cols)
-               Each cell 38 wide × 16 tall. Origin x=80, y=20
-               cells: high acceptance (dark blue) for ϑ ≤ 0.15, fall off through 0.2, then low for ϑ ≥ 0.25 -->
+        <svg viewBox="0 0 580 260" width="100%" style="display:block; margin-top:8px;">
+          <!-- heatmap: real data from theta_sensitivity_summary.csv
+               7 rows n ∈ {4,6,8,10,12,14,16}, 8 cols ϑ ∈ {.05,.08,.10,.12,.15,.20,.30,.50}
+               Cell: 47 wide × 26 tall. Origin x=80, y=22 -->
+
           <!-- Y labels -->
           <g font-family="IBM Plex Mono" font-size="11" fill="#75716a">
-            <text x="74" y="32" text-anchor="end">4</text>
-            <text x="74" y="64" text-anchor="end">6</text>
-            <text x="74" y="96" text-anchor="end">8</text>
-            <text x="74" y="128" text-anchor="end">10</text>
-            <text x="74" y="160" text-anchor="end">12</text>
-            <text x="74" y="192" text-anchor="end">14</text>
-            <text x="74" y="224" text-anchor="end">16</text>
-            <text x="40" y="125" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="12" letter-spacing="2" transform="rotate(-90 40 125)" fill="#75716a">n</text>
+            <text x="74" y="39"  text-anchor="end">4</text>
+            <text x="74" y="65"  text-anchor="end">6</text>
+            <text x="74" y="91"  text-anchor="end">8</text>
+            <text x="74" y="117" text-anchor="end">10</text>
+            <text x="74" y="143" text-anchor="end">12</text>
+            <text x="74" y="169" text-anchor="end">14</text>
+            <text x="74" y="195" text-anchor="end">16</text>
+            <text x="40" y="113" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="12" letter-spacing="2" transform="rotate(-90 40 113)" fill="#75716a">n</text>
           </g>
           <!-- X labels -->
           <g font-family="IBM Plex Mono" font-size="11" fill="#75716a">
-            <text x="99" y="248" text-anchor="middle">.05</text>
-            <text x="137" y="248" text-anchor="middle">.10</text>
-            <text x="175" y="248" text-anchor="middle">.15</text>
-            <text x="213" y="248" text-anchor="middle">.20</text>
-            <text x="251" y="248" text-anchor="middle">.25</text>
-            <text x="289" y="248" text-anchor="middle">.30</text>
-            <text x="327" y="248" text-anchor="middle">.35</text>
-            <text x="365" y="248" text-anchor="middle">.40</text>
-            <text x="403" y="248" text-anchor="middle">.45</text>
-            <text x="441" y="248" text-anchor="middle">.50</text>
-            <text x="265" y="268" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="12" letter-spacing="2" fill="#75716a">ϑ (Fourier resolution)</text>
+            <text x="104" y="222" text-anchor="middle">.05</text>
+            <text x="151" y="222" text-anchor="middle">.08</text>
+            <text x="198" y="222" text-anchor="middle">.10</text>
+            <text x="245" y="222" text-anchor="middle">.12</text>
+            <text x="292" y="222" text-anchor="middle">.15</text>
+            <text x="339" y="222" text-anchor="middle">.20</text>
+            <text x="386" y="222" text-anchor="middle">.30</text>
+            <text x="433" y="222" text-anchor="middle">.50</text>
+            <text x="265" y="244" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="12" letter-spacing="2" fill="#75716a">ϑ (Fourier resolution)</text>
           </g>
 
-          <!-- Cells: function to produce per-cell color based on theta and n
-               High accept (cell-A): #2d4a6e
-               Mid (cell-B): #6688aa
-               Yellow band at theta=0.2: #b9863e
-               Low: #dcd6c5  -->
-          <g id="heat-cells"></g>
+          <!-- Cells (acceptance %), binned: ≥0.95 #1f3552, 0.70-0.95 #3e6087, 0.40-0.70 #6688aa, 0.20-0.40 #b9863e, <0.20 #dcd6c5 -->
+          <g id="heat-cells" font-family="IBM Plex Mono" font-size="10">
+            <!-- n=4 -->
+            <rect x="80"  y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="39" text-anchor="middle" fill="#fff">84</text>
+            <rect x="127" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="39" text-anchor="middle" fill="#fff">84</text>
+            <rect x="174" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="39" text-anchor="middle" fill="#fff">80</text>
+            <rect x="221" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="39" text-anchor="middle" fill="#fff">78</text>
+            <rect x="268" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="39" text-anchor="middle" fill="#fff">81</text>
+            <rect x="315" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="39" text-anchor="middle" fill="#fff">82</text>
+            <rect x="362" y="22" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="39" text-anchor="middle" fill="#fff">79</text>
+            <rect x="409" y="22" width="47" height="26" fill="#b9863e" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="39" text-anchor="middle" fill="#161512">21</text>
+            <!-- n=6 -->
+            <rect x="80"  y="48" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="65" text-anchor="middle" fill="#fff">96</text>
+            <rect x="127" y="48" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="65" text-anchor="middle" fill="#fff">98</text>
+            <rect x="174" y="48" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="65" text-anchor="middle" fill="#fff">96</text>
+            <rect x="221" y="48" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="65" text-anchor="middle" fill="#fff">92</text>
+            <rect x="268" y="48" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="65" text-anchor="middle" fill="#fff">93</text>
+            <rect x="315" y="48" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="65" text-anchor="middle" fill="#fff">82</text>
+            <rect x="362" y="48" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="65" text-anchor="middle" fill="#161512">18</text>
+            <rect x="409" y="48" width="47" height="26" fill="#b9863e" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="65" text-anchor="middle" fill="#161512">22</text>
+            <!-- n=8 -->
+            <rect x="80"  y="74" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="91" text-anchor="middle" fill="#fff">100</text>
+            <rect x="127" y="74" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="91" text-anchor="middle" fill="#fff">100</text>
+            <rect x="174" y="74" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="91" text-anchor="middle" fill="#fff">98</text>
+            <rect x="221" y="74" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="91" text-anchor="middle" fill="#fff">96</text>
+            <rect x="268" y="74" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="91" text-anchor="middle" fill="#fff">80</text>
+            <rect x="315" y="74" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="91" text-anchor="middle" fill="#fff">55</text>
+            <rect x="362" y="74" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="91" text-anchor="middle" fill="#161512">19</text>
+            <rect x="409" y="74" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="91" text-anchor="middle" fill="#161512">16</text>
+            <!-- n=10 -->
+            <rect x="80"  y="100" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="117" text-anchor="middle" fill="#fff">100</text>
+            <rect x="127" y="100" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="117" text-anchor="middle" fill="#fff">96</text>
+            <rect x="174" y="100" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="117" text-anchor="middle" fill="#fff">82</text>
+            <rect x="221" y="100" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="117" text-anchor="middle" fill="#fff">75</text>
+            <rect x="268" y="100" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="117" text-anchor="middle" fill="#fff">69</text>
+            <rect x="315" y="100" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="117" text-anchor="middle" fill="#fff">42</text>
+            <rect x="362" y="100" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="117" text-anchor="middle" fill="#161512">16</text>
+            <rect x="409" y="100" width="47" height="26" fill="#b9863e" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="117" text-anchor="middle" fill="#161512">22</text>
+            <!-- n=12 -->
+            <rect x="80"  y="126" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="143" text-anchor="middle" fill="#fff">100</text>
+            <rect x="127" y="126" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="143" text-anchor="middle" fill="#fff">86</text>
+            <rect x="174" y="126" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="143" text-anchor="middle" fill="#fff">72</text>
+            <rect x="221" y="126" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="143" text-anchor="middle" fill="#fff">79</text>
+            <rect x="268" y="126" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="143" text-anchor="middle" fill="#fff">72</text>
+            <rect x="315" y="126" width="47" height="26" fill="#b9863e" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="143" text-anchor="middle" fill="#161512">39</text>
+            <rect x="362" y="126" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="143" text-anchor="middle" fill="#161512">10</text>
+            <rect x="409" y="126" width="47" height="26" fill="#b9863e" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="143" text-anchor="middle" fill="#161512">22</text>
+            <!-- n=14 -->
+            <rect x="80"  y="152" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="169" text-anchor="middle" fill="#fff">100</text>
+            <rect x="127" y="152" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="169" text-anchor="middle" fill="#fff">79</text>
+            <rect x="174" y="152" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="169" text-anchor="middle" fill="#fff">81</text>
+            <rect x="221" y="152" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="169" text-anchor="middle" fill="#fff">73</text>
+            <rect x="268" y="152" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="169" text-anchor="middle" fill="#fff">69</text>
+            <rect x="315" y="152" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="169" text-anchor="middle" fill="#fff">48</text>
+            <rect x="362" y="152" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="169" text-anchor="middle" fill="#161512">13</text>
+            <rect x="409" y="152" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="169" text-anchor="middle" fill="#161512">17</text>
+            <!-- n=16 -->
+            <rect x="80"  y="178" width="47" height="26" fill="#1f3552" stroke="#f6f3ec" stroke-width="0.5"/><text x="103" y="195" text-anchor="middle" fill="#fff">100</text>
+            <rect x="127" y="178" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="150" y="195" text-anchor="middle" fill="#fff">76</text>
+            <rect x="174" y="178" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="197" y="195" text-anchor="middle" fill="#fff">71</text>
+            <rect x="221" y="178" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="244" y="195" text-anchor="middle" fill="#fff">71</text>
+            <rect x="268" y="178" width="47" height="26" fill="#3e6087" stroke="#f6f3ec" stroke-width="0.5"/><text x="291" y="195" text-anchor="middle" fill="#fff">74</text>
+            <rect x="315" y="178" width="47" height="26" fill="#6688aa" stroke="#f6f3ec" stroke-width="0.5"/><text x="338" y="195" text-anchor="middle" fill="#fff">45</text>
+            <rect x="362" y="178" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="385" y="195" text-anchor="middle" fill="#161512">17</text>
+            <rect x="409" y="178" width="47" height="26" fill="#dcd6c5" stroke="#f6f3ec" stroke-width="0.5"/><text x="432" y="195" text-anchor="middle" fill="#161512">17</text>
+          </g>
 
-          <!-- frontier line at theta=0.2 -->
-          <line x1="232" y1="22" x2="232" y2="234" stroke="#8a2a18" stroke-width="1.6" stroke-dasharray="4 3"/>
-          <text x="234" y="20" font-family="IBM Plex Mono" font-size="11" fill="#8a2a18">ϑ = 0.20 frontier</text>
+          <!-- frontier line at ϑ=0.20 (between col .20 and col .30) -->
+          <line x1="362" y1="22" x2="362" y2="204" stroke="#8a2a18" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <text x="364" y="18" font-family="IBM Plex Mono" font-size="11" fill="#8a2a18">ϑ = 0.20 frontier</text>
 
           <!-- legend -->
           <g transform="translate(470,22)" font-family="IBM Plex Sans Condensed" font-size="11" fill="#3a3733">
-            <text x="0" y="0" font-size="11" letter-spacing="1" fill="#75716a">ACCEPT</text>
+            <text x="0" y="0" font-size="11" letter-spacing="1" fill="#75716a">ACCEPT %</text>
             <rect x="0" y="8" width="18" height="14" fill="#1f3552"/>
-            <text x="22" y="18">1.0</text>
+            <text x="22" y="18">≥ 95</text>
             <rect x="0" y="26" width="18" height="14" fill="#3e6087"/>
-            <text x="22" y="36">0.8</text>
+            <text x="22" y="36">70–95</text>
             <rect x="0" y="44" width="18" height="14" fill="#6688aa"/>
-            <text x="22" y="54">0.5</text>
+            <text x="22" y="54">40–70</text>
             <rect x="0" y="62" width="18" height="14" fill="#b9863e"/>
-            <text x="22" y="72">0.2</text>
+            <text x="22" y="72">20–40</text>
             <rect x="0" y="80" width="18" height="14" fill="#dcd6c5"/>
-            <text x="22" y="90">0.0</text>
+            <text x="22" y="90">&lt; 20</text>
           </g>
         </svg>
       </div>
@@ -1280,7 +1343,7 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
         Formal treatment of per-gate noise.
       </h3>
       <p class="body" style="font-size:22px;">
-        Show the 1/2ⁿ noise floor is tight under per-gate depolarisation, or identify a different scaling. Gap left open by Ma, Su &amp; Deng.
+        Extend Ma–Su–Deng's <em>output-side</em> bounds (measurement noise, end-of-circuit depolarisation) to <em>per-gate</em> depolarisation inside the QFS circuit, and derive a closed-form (n, p) verifiability boundary that predicts the empirical cliff at n ≥ 6.
       </p>
     </div>
 
@@ -1310,66 +1373,6 @@ At n=4: predicted 31, observed 29 out of 100 trials.</div>
 </section>
 
 </deck-stage>
-
-<script>
-  // ---- ϑ-heatmap cells (slide 6) ----
-  // n rows (4..16, step 1 -> 13 rows), theta cols (0.05..0.5, step 0.05 -> 10 cols)
-  (function fillHeatmap(){
-    const svg = document.querySelectorAll('#heat-cells');
-    if(!svg.length) return;
-    const target = svg[0];
-    const xs = [80,118,156,194,232,270,308,346,384,422]; // 10 columns @ width 38
-    const ys = [22, 38, 54, 70, 86, 102, 118, 134, 150, 166, 182, 198, 214]; // 13 rows @ height 16
-    // theta values
-    const thetas = [0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
-    const ns = [4,5,6,7,8,9,10,11,12,13,14,15,16];
-
-    // model: acceptance = sigmoid((0.2 - theta + small n bonus) * k)
-    // promise frontier at theta = 0.2 -> sharp falloff just past
-    // small accept for theta < 0.2 (high) and slight n-dependence
-    function accept(n, theta){
-      // strong accept below 0.2, transition band at 0.2, low above
-      const base = 1/(1+Math.exp((theta - 0.18)*36));
-      // n dependence: very small n less reliable due to discretisation; small bump at moderate n
-      const nfac = 1 - Math.exp(-(n-3)*0.6);
-      // a tiny accept survival above 0.2 for small n (dominant coeff still in hand)
-      const survival = 0.18 * Math.exp(-((theta-0.2)*8)*((theta-0.2)*8)) * (n<=6?1:0.5);
-      let a = Math.max(0, Math.min(1, base*nfac + survival));
-      return a;
-    }
-    function colorFor(a){
-      // gradient: paper (0) -> oxide-amber at ~0.2 -> blue mid -> blue dark
-      // stops: 0 -> #dcd6c5, 0.2 -> #b9863e (frontier band), 0.5 -> #6688aa, 0.8 -> #3e6087, 1.0 -> #1f3552
-      const stops = [
-        {p:0.0, c:[220,214,197]},
-        {p:0.2, c:[185,134,62]},
-        {p:0.5, c:[102,136,170]},
-        {p:0.8, c:[62, 96, 135]},
-        {p:1.0, c:[31, 53, 82]},
-      ];
-      for(let i=0;i<stops.length-1;i++){
-        const s = stops[i], e = stops[i+1];
-        if(a >= s.p && a <= e.p){
-          const t = (a - s.p)/(e.p - s.p);
-          const rgb = s.c.map((v,j)=> Math.round(v + (e.c[j]-v)*t));
-          return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-        }
-      }
-      const last = stops[stops.length-1].c;
-      return `rgb(${last[0]},${last[1]},${last[2]})`;
-    }
-
-    let frag = '';
-    for(let i=0;i<ns.length;i++){
-      for(let j=0;j<thetas.length;j++){
-        const a = accept(ns[i], thetas[j]);
-        const col = colorFor(a);
-        frag += `<rect x="${xs[j]}" y="${ys[i]}" width="38" height="16" fill="${col}" stroke="#f6f3ec" stroke-width="0.5"/>`;
-      }
-    }
-    target.innerHTML = frag;
-  })();
-</script>
 
 </body>
 </html>
