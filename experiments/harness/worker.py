@@ -425,6 +425,7 @@ def _run_dishonest_trial(spec: TrialSpec, state) -> TrialResult:
     dummy_qfs = QFSResult({}, {}, 0, 0, n, "statevector")
     dummy_sa = SpectrumApproximation({}, 0.0, n, 0, 0)
 
+    assert spec.dishonest_strategy is not None
     strategy_fn = _DISHONEST_STRATEGIES.get(spec.dishonest_strategy)
     if strategy_fn is None:
         raise ValueError(f"Unknown dishonest strategy: {spec.dishonest_strategy}")
@@ -580,12 +581,12 @@ def run_trials_parallel(
 
     if max_workers <= 1:
         # Sequential — easier to debug
-        results = []
+        results_single: list[TrialResult] = []
         for i, spec in enumerate(specs, 1):
             t = _run_trial_worker(spec)
             _print_trial_progress(t, i, total, label)
-            results.append(t)
-        return results
+            results_single.append(t)
+        return results_single
 
     # Parallel
     results: list[Optional[TrialResult]] = [None] * total
